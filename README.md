@@ -16,3 +16,6 @@ This AIO repacks NanoClaw to work perfectly as a background Docker container on 
 
 ## Documentation
 Please see the [Documentation](./docs/README.md) folder for setup and advanced usage.
+
+## 📈 Star History
+[![Star History Chart](https://api.star-history.com/svg?repos=JSONbored/nanoclaw-aio&theme=dark)](https://star-history.com/#JSONbored/nanoclaw-aio&Date)
