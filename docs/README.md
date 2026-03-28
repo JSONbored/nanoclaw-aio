@@ -28,3 +28,13 @@ If you are using the `awesome-unraid` repository, simply search for "NanoClaw-AI
 
 ## 🔒 Security
 NanoClaw's architecture requires the orchestrator process to have Docker socket access in order to spin up the short-lived agent task containers. Ensure your Unraid network is properly secured, as root-level Docker access is technically equivalent to root access on the host. 
+
+---
+
+## 👨‍💻 About the Creator
+
+Built with 🖤 by **[JSONbored](https://github.com/JSONbored)**.
+
+- 🌐 **Portfolio & Services:** [aethereal.dev](https://aethereal.dev)
+- 📅 **Book a Call:** [cal.com/aethereal](https://cal.com/aethereal) 
+- ☕ **Support my work:** [Sponsor on GitHub](https://github.com/sponsors/JSONbored)

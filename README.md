@@ -19,3 +19,13 @@ Please see the [Documentation](./docs/README.md) folder for setup and advanced u
 
 ## 📈 Star History
 [![Star History Chart](https://api.star-history.com/svg?repos=JSONbored/nanoclaw-aio&theme=dark)](https://star-history.com/#JSONbored/nanoclaw-aio&Date)
+
+---
+
+## 👨‍💻 About the Creator
+
+Built with 🖤 by **[JSONbored](https://github.com/JSONbored)**.
+
+- 🌐 **Portfolio & Services:** [aethereal.dev](https://aethereal.dev)
+- 📅 **Book a Call:** [cal.com/aethereal](https://cal.com/aethereal) 
+- ☕ **Support my work:** [Sponsor on GitHub](https://github.com/sponsors/JSONbored)
