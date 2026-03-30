@@ -1,34 +1,63 @@
-FROM node:22-slim
+# syntax=docker/dockerfile:1
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
+ARG UPSTREAM_VERSION=v1.2.42
+ARG UPSTREAM_COMMIT=f1bc56ee96119d6197bbb13cda0d5cab134e608b
+
+FROM node:22-slim AS build
+
+ARG UPSTREAM_COMMIT
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     git \
-    build-essential \
+    make \
+    g++ \
     python3 \
-    docker.io \
-    sudo \
     && rm -rf /var/lib/apt/lists/*
-
-# Add node user to docker group (so it can spawn containers)
-RUN usermod -aG docker node
 
 WORKDIR /opt/nanoclaw
 
-# Clone upstream repo
-RUN git clone https://github.com/dh7/NanoClaw.git . && \
-    git config --global --add safe.directory /workspace
+RUN git clone https://github.com/qwibitai/nanoclaw-telegram.git . && \
+    git checkout "${UPSTREAM_COMMIT}"
 
-# Install global dependencies that might be needed by scripts
-RUN npm install -g typescript tsx pm2
+COPY patches/native-credential-proxy.patch /tmp/native-credential-proxy.patch
 
-# Copy custom entrypoint
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+RUN git apply /tmp/native-credential-proxy.patch && \
+    npm ci && \
+    npm run build && \
+    rm -rf .git /tmp/native-credential-proxy.patch
 
-# The mapped Unraid appdata volume
-VOLUME ["/workspace"]
 
-# Let the entrypoint handle file-copying and dependency installation at runtime 
-# to ensure the persistent volume is properly populated.
-ENTRYPOINT ["docker-entrypoint.sh"]
+FROM node:22-slim
+
+ARG UPSTREAM_VERSION
+ARG UPSTREAM_COMMIT
+
+LABEL org.opencontainers.image.source="https://github.com/JSONbored/nanoclaw-aio" \
+      org.opencontainers.image.title="nanoclaw-aio" \
+      org.opencontainers.image.description="NanoClaw Telegram build packaged as a single-container Unraid AIO image" \
+      org.opencontainers.image.version="${UPSTREAM_VERSION}" \
+      io.jsonbored.upstream.commit="${UPSTREAM_COMMIT}"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
+    ca-certificates \
+    docker.io \
+    tini \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt/nanoclaw
+
+COPY --from=build /opt/nanoclaw /opt/nanoclaw
+COPY --from=build /opt/nanoclaw/groups /opt/nanoclaw-default-groups
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh && \
+    mkdir -p /appdata
+
+VOLUME ["/appdata"]
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
+  CMD /bin/bash -lc 'if [[ -f /appdata/.waiting-for-config || -f /appdata/.smoke-ready ]]; then exit 0; fi; test -f /appdata/.bootstrap-complete && pgrep -f "node dist/index.js" >/dev/null'
+
+ENTRYPOINT ["tini", "--", "docker-entrypoint.sh"]

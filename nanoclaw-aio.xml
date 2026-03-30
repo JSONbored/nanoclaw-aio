@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>NanoClaw-AIO</Name>
+  <Repository>ghcr.io/jsonbored/nanoclaw-aio:latest</Repository>
+  <Registry>https://ghcr.io/jsonbored/nanoclaw-aio</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/JSONbored/nanoclaw-aio/issues</Support>
+  <Project>https://github.com/JSONbored/nanoclaw-aio</Project>
+  <Overview>
+NanoClaw is a lightweight agent orchestrator that runs Claude agents inside isolated containers. This Unraid AIO package is designed as a Telegram-first deployment: you talk to the assistant through Telegram, and NanoClaw handles scheduling, memory, group isolation, and containerized agent execution behind the scenes.
+
+This package keeps the NanoClaw application code inside the image and persists only runtime data under /appdata. That makes updates much safer than mounting the whole project tree from your array.
+
+First-run path:
+1. Set your Anthropic credential and Telegram bot details.
+2. Mount the Docker socket.
+3. Start the container.
+4. The container will seed appdata, register your Telegram main chat, and then start NanoClaw.
+
+There is no web UI for this app. Control happens through Telegram.
+  </Overview>
+  <Category>AI:Tools:Productivity</Category>
+  <Icon>https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/icons/nanoclaw.webp</Icon>
+  <TemplateURL>https://raw.githubusercontent.com/JSONbored/nanoclaw-aio/main/nanoclaw-aio.xml</TemplateURL>
+  <Beta>True</Beta>
+  <ExtraSearchTerms>telegram, claude, agents, automation, scheduler, docker, assistant</ExtraSearchTerms>
+
+  <Config Name="Appdata Directory" Target="/appdata" Default="/mnt/user/appdata/nanoclaw-aio" Mode="rw" Description="Persistent NanoClaw data: groups, SQLite state, runtime data, and config files." Type="Path" Display="always" Required="true" Mask="false"/>
+  <Config Name="Docker Socket" Target="/var/run/docker.sock" Default="/var/run/docker.sock" Mode="rw" Description="Required so NanoClaw can launch isolated agent containers." Type="Path" Display="always" Required="true" Mask="false"/>
+
+  <Config Name="Anthropic API Key" Target="ANTHROPIC_API_KEY" Default="" Mode="" Description="Anthropic API key used by NanoClaw agent runs." Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="Assistant Name" Target="ASSISTANT_NAME" Default="nanoclaw" Mode="" Description="The trigger name used during Telegram auto-registration. Example trigger: @nanoclaw" Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="Telegram Bot Token" Target="TELEGRAM_BOT_TOKEN" Default="" Mode="" Description="Bot token from @BotFather. Required for normal operation." Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="Telegram Chat ID" Target="TELEGRAM_CHAT_ID" Default="" Mode="" Description="Telegram chat or group ID to auto-register as the main NanoClaw chat." Type="Variable" Display="always" Required="true" Mask="false"/>
+
+  <Config Name="Auto-Setup Telegram" Target="AUTO_SETUP_TELEGRAM" Default="true" Mode="" Description="When true, the container auto-registers the Telegram main chat on first boot." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Telegram Chat Name" Target="TELEGRAM_CHAT_NAME" Default="Telegram Main" Mode="" Description="Friendly name used during automatic Telegram registration." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Claude OAuth Token" Target="CLAUDE_CODE_OAUTH_TOKEN" Default="" Mode="" Description="Optional alternative to ANTHROPIC_API_KEY if you use Claude Code OAuth style auth." Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="Anthropic Base URL" Target="ANTHROPIC_BASE_URL" Default="" Mode="" Description="Optional Anthropic-compatible API endpoint override." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Timezone" Target="TZ" Default="UTC" Mode="" Description="Timezone used by scheduled tasks and formatted timestamps." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+</Container>
