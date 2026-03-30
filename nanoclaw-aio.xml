@@ -23,7 +23,7 @@ There is no web UI for this app. Control happens through Telegram.
   </Overview>
   <Category>AI:Tools:Productivity</Category>
   <Icon>https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/icons/nanoclaw.webp</Icon>
-  <TemplateURL>https://raw.githubusercontent.com/JSONbored/nanoclaw-aio/main/nanoclaw-aio.xml</TemplateURL>
+  <TemplateURL>https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/nanoclaw-aio.xml</TemplateURL>
   <Beta>True</Beta>
   <ExtraSearchTerms>telegram, claude, agents, automation, scheduler, docker, assistant</ExtraSearchTerms>
 
