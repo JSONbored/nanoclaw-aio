@@ -1,0 +1,366 @@
+name: CI / NanoClaw-AIO
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'Dockerfile'
+      - 'docker-entrypoint.sh'
+      - 'patches/**'
+      - 'scripts/**'
+      - 'upstream.toml'
+      - 'nanoclaw-aio.xml'
+      - 'renovate.json'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'Dockerfile'
+      - 'docker-entrypoint.sh'
+      - 'patches/**'
+      - 'scripts/**'
+      - 'upstream.toml'
+      - 'nanoclaw-aio.xml'
+      - 'renovate.json'
+      - '.github/workflows/**'
+  workflow_dispatch:
+    inputs:
+      run_smoke_test:
+        description: "Run the smoke-test job"
+        required: false
+        default: true
+        type: boolean
+      publish_image:
+        description: "Publish image tags from the current ref"
+        required: false
+        default: false
+        type: boolean
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  REGISTRY: ghcr.io
+  IMAGE_NAME: jsonbored/nanoclaw-aio
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      build_related: ${{ steps.filter.outputs.build_related }}
+      xml_related: ${{ steps.filter.outputs.xml_related }}
+      renovate_related: ${{ steps.filter.outputs.renovate_related }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Classify changed files
+        id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before || '' }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          GITHUB_SHA_VALUE: ${{ github.sha }}
+        run: |
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
+            echo "build_related=true" >> "${GITHUB_OUTPUT}"
+            echo "xml_related=true" >> "${GITHUB_OUTPUT}"
+            echo "renovate_related=true" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          if [[ "${EVENT_NAME}" == "pull_request" ]]; then
+            base="${BASE_SHA}"
+            head="${HEAD_SHA}"
+          else
+            base="${BEFORE_SHA}"
+            head="${GITHUB_SHA_VALUE}"
+          fi
+
+          if ! git rev-parse --git-dir >/dev/null 2>&1; then
+            echo "Git metadata is unavailable; treating the workflow as fully impacted."
+            echo "build_related=true" >> "${GITHUB_OUTPUT}"
+            echo "xml_related=true" >> "${GITHUB_OUTPUT}"
+            echo "renovate_related=true" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          if [[ -z "${base}" || "${base}" =~ ^0+$ ]]; then
+            if ! changed_files="$(git show --pretty='' --name-only "${head}" 2>/dev/null)"; then
+              echo "Unable to inspect commit range; treating the workflow as fully impacted."
+              echo "build_related=true" >> "${GITHUB_OUTPUT}"
+              echo "xml_related=true" >> "${GITHUB_OUTPUT}"
+              echo "renovate_related=true" >> "${GITHUB_OUTPUT}"
+              exit 0
+            fi
+          else
+            if ! changed_files="$(git diff --name-only "${base}" "${head}" 2>/dev/null)"; then
+              echo "Unable to diff commit range; treating the workflow as fully impacted."
+              echo "build_related=true" >> "${GITHUB_OUTPUT}"
+              echo "xml_related=true" >> "${GITHUB_OUTPUT}"
+              echo "renovate_related=true" >> "${GITHUB_OUTPUT}"
+              exit 0
+            fi
+          fi
+
+          printf 'Changed files:\n%s\n' "${changed_files}"
+
+          build_related=false
+          xml_related=false
+          renovate_related=false
+
+          while IFS= read -r path; do
+            [[ -z "${path}" ]] && continue
+            case "${path}" in
+              Dockerfile|docker-entrypoint.sh|upstream.toml|patches/*|scripts/*)
+                build_related=true
+                ;;
+              nanoclaw-aio.xml)
+                xml_related=true
+                ;;
+              renovate.json)
+                renovate_related=true
+                ;;
+              .github/workflows/*)
+                build_related=true
+                renovate_related=true
+                ;;
+            esac
+          done <<< "${changed_files}"
+
+          echo "build_related=${build_related}" >> "${GITHUB_OUTPUT}"
+          echo "xml_related=${xml_related}" >> "${GITHUB_OUTPUT}"
+          echo "renovate_related=${renovate_related}" >> "${GITHUB_OUTPUT}"
+
+  validate-repo:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.build_related == 'true' || needs.detect-changes.outputs.xml_related == 'true' || needs.detect-changes.outputs.renovate_related == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Validate scripts and metadata
+        if: ${{ needs.detect-changes.outputs.build_related == 'true' }}
+        run: |
+          bash -n docker-entrypoint.sh
+          bash -n scripts/smoke-test.sh
+          PYTHONPYCACHEPREFIX=/tmp/nanoclaw-aio-pyc python3 -m py_compile scripts/check-upstream.py
+          git apply --check patches/native-credential-proxy.patch
+
+      - name: Validate XML
+        if: ${{ needs.detect-changes.outputs.build_related == 'true' || needs.detect-changes.outputs.xml_related == 'true' }}
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          ET.parse("nanoclaw-aio.xml")
+          print("nanoclaw-aio.xml parsed successfully")
+          PY
+
+      - name: Validate Renovate config
+        if: ${{ needs.detect-changes.outputs.renovate_related == 'true' }}
+        run: npx --yes --package renovate renovate-config-validator renovate.json
+
+  pinned-actions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Enforce pinned action SHAs
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          workflow_dir = pathlib.Path(".github/workflows")
+          pattern = re.compile(r"^\s*uses:\s*([^@\s]+)@([^\s#]+)")
+          sha_pattern = re.compile(r"^[0-9a-f]{40}$")
+          failures = []
+
+          for path in sorted(workflow_dir.glob("*.yml")):
+              for lineno, line in enumerate(path.read_text().splitlines(), start=1):
+                  match = pattern.match(line)
+                  if not match:
+                      continue
+                  target, ref = match.groups()
+                  if target.startswith("./"):
+                      continue
+                  if not sha_pattern.fullmatch(ref):
+                      failures.append(f"{path}:{lineno}: action is not pinned to a full SHA -> {line.strip()}")
+
+          if failures:
+              print("\n".join(failures), file=sys.stderr)
+              sys.exit(1)
+          print("All workflow actions are pinned to full commit SHAs.")
+          PY
+
+  dependency-review:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Dependency review
+        uses: actions/dependency-review-action@3c4e3dcb1aa7874d2c16be7d79418e9b7efd6261 # v4.8.2
+
+  smoke-test:
+    if: ${{ needs.detect-changes.outputs.build_related == 'true' && (github.event_name != 'workflow_dispatch' || inputs.run_smoke_test == true) }}
+    needs:
+      - detect-changes
+      - validate-repo
+      - pinned-actions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Build local test image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          load: true
+          tags: nanoclaw-aio:ci
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test
+        run: |
+          chmod +x scripts/smoke-test.sh
+          export KEEP_SMOKE_ARTIFACTS=1
+          bash -x ./scripts/smoke-test.sh nanoclaw-aio:ci
+
+      - name: Dump smoke test diagnostics
+        if: failure()
+        run: |
+          docker ps -a
+          docker inspect nanoclaw-aio-smoke || true
+          docker logs nanoclaw-aio-smoke || true
+
+  publish:
+    if: ${{ needs.detect-changes.outputs.build_related == 'true' && github.event_name != 'pull_request' && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish_image == true)) }}
+    needs:
+      - detect-changes
+      - validate-repo
+      - pinned-actions
+      - smoke-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Log in to GHCR
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute image tags
+        id: prep
+        run: |
+          image="${REGISTRY}/${IMAGE_NAME}"
+          sha_tag="${image}:sha-${GITHUB_SHA}"
+          version="$(sed -n 's/^ARG UPSTREAM_VERSION=//p' Dockerfile | head -n1)"
+          version_no_v="${version#v}"
+
+          {
+            echo "upstream_version=${version}"
+            echo "tags<<EOF"
+            echo "${image}:latest"
+            if [[ -n "${version}" ]]; then
+              IFS='.' read -r major minor patch <<< "${version_no_v}"
+              echo "${image}:${version}"
+              if [[ -n "${major:-}" ]]; then
+                echo "${image}:v${major}"
+              fi
+              if [[ -n "${major:-}" && -n "${minor:-}" ]]; then
+                echo "${image}:v${major}.${minor}"
+              fi
+            fi
+            echo "${sha_tag}"
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Build and push
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: ${{ steps.prep.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/JSONbored/nanoclaw-aio
+            org.opencontainers.image.title=nanoclaw-aio
+            org.opencontainers.image.version=${{ steps.prep.outputs.upstream_version || '' }}
+            io.jsonbored.upstream.name=NanoClaw Telegram
+
+  sync-awesome-unraid:
+    if: ${{ needs.detect-changes.outputs.xml_related == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs:
+      - detect-changes
+      - validate-repo
+      - pinned-actions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check sync configuration
+        env:
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          if [[ -z "${SYNC_TOKEN}" ]]; then
+            echo "SYNC_ENABLED=false" >> "${GITHUB_ENV}"
+            echo "SYNC_TOKEN is not configured; skipping sync."
+          else
+            echo "SYNC_ENABLED=true" >> "${GITHUB_ENV}"
+          fi
+
+      - name: Checkout Source Repository
+        if: ${{ env.SYNC_ENABLED == 'true' }}
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Checkout Target Repository
+        if: ${{ env.SYNC_ENABLED == 'true' }}
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          repository: JSONbored/awesome-unraid
+          token: ${{ secrets.SYNC_TOKEN }}
+          path: target-repo
+
+      - name: Copy and commit template
+        if: ${{ env.SYNC_ENABLED == 'true' }}
+        run: |
+          cp nanoclaw-aio.xml target-repo/nanoclaw-aio.xml
+          cd target-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add nanoclaw-aio.xml
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: auto-sync nanoclaw-aio.xml from upstream" && git push)
