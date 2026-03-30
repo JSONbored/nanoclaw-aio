@@ -10,6 +10,7 @@ on:
       - 'patches/**'
       - 'scripts/**'
       - 'nanoclaw-aio.xml'
+      - 'assets/**'
       - 'upstream.toml'
       - '.github/workflows/build.yml'
   pull_request:
@@ -21,6 +22,7 @@ on:
       - 'patches/**'
       - 'scripts/**'
       - 'nanoclaw-aio.xml'
+      - 'assets/**'
       - 'upstream.toml'
       - '.github/workflows/build.yml'
   workflow_dispatch:
@@ -65,9 +67,58 @@ jobs:
           print("Parsed nanoclaw-aio.xml successfully")
           PY
 
+  pinned-actions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Enforce pinned action SHAs
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          workflow_dir = pathlib.Path(".github/workflows")
+          pattern = re.compile(r"^\s*uses:\s*([^@\s]+)@([^\s#]+)")
+          sha_pattern = re.compile(r"^[0-9a-f]{40}$")
+          failures = []
+
+          for path in sorted(workflow_dir.glob("*.yml")):
+              for lineno, line in enumerate(path.read_text().splitlines(), start=1):
+                  match = pattern.match(line)
+                  if not match:
+                      continue
+                  target, ref = match.groups()
+                  if target.startswith("./"):
+                      continue
+                  if not sha_pattern.fullmatch(ref):
+                      failures.append(f"{path}:{lineno}: action is not pinned to a full SHA -> {line.strip()}")
+
+          if failures:
+              print("\n".join(failures), file=sys.stderr)
+              sys.exit(1)
+          print("All workflow actions are pinned to full commit SHAs.")
+          PY
+
+  dependency-review:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Dependency review
+        uses: actions/dependency-review-action@3c4e3dcb1aa7874d2c16be7d79418e9b7efd6261 # v4.8.2
+
   smoke-test:
     if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.run_smoke_test == true) }}
-    needs: validate
+    needs:
+      - validate
+      - pinned-actions
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -105,6 +156,7 @@ jobs:
     if: ${{ github.event_name != 'pull_request' && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish_image == true)) }}
     needs:
       - validate
+      - pinned-actions
       - smoke-test
     runs-on: ubuntu-latest
     permissions:
@@ -156,3 +208,51 @@ jobs:
           platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  sync-awesome-unraid:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs:
+      - validate
+      - pinned-actions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TEMPLATE_XML: nanoclaw-aio.xml
+      TARGET_REPOSITORY: ${{ vars.AWESOME_UNRAID_REPOSITORY || 'JSONbored/awesome-unraid' }}
+      TARGET_XML_NAME: ${{ vars.AWESOME_UNRAID_XML_NAME || 'nanoclaw-aio.xml' }}
+    steps:
+      - name: Verify sync configuration
+        id: token
+        env:
+          ENABLE_AIO_AUTOMATION: ${{ vars.ENABLE_AIO_AUTOMATION }}
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          if [[ "${ENABLE_AIO_AUTOMATION}" == "true" && -n "${TARGET_REPOSITORY}" && -n "${TARGET_XML_NAME}" && -n "${SYNC_TOKEN}" ]]; then
+            echo "enabled=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "enabled=false" >> "${GITHUB_OUTPUT}"
+            echo "Template sync is not fully configured; skipping."
+          fi
+
+      - name: Checkout Source Repository
+        if: ${{ steps.token.outputs.enabled == 'true' }}
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Checkout Target Repository
+        if: ${{ steps.token.outputs.enabled == 'true' }}
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          repository: ${{ env.TARGET_REPOSITORY }}
+          token: ${{ secrets.SYNC_TOKEN }}
+          path: target-repo
+
+      - name: Copy and Commit Template
+        if: ${{ steps.token.outputs.enabled == 'true' }}
+        run: |
+          cp "${TEMPLATE_XML}" "target-repo/${TARGET_XML_NAME}"
+          cd target-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${TARGET_XML_NAME}"
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: auto-sync AIO template assets" && git push)
