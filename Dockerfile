@@ -3,7 +3,7 @@
 ARG UPSTREAM_VERSION=v1.2.42
 ARG UPSTREAM_COMMIT=f1bc56ee96119d6197bbb13cda0d5cab134e608b
 
-FROM node:22-slim AS build
+FROM node:24-slim@sha256:06e5c9f86bfa0aaa7163cf37a5eaa8805f16b9acb48e3f85645b09d459fc2a9f AS build
 
 ARG UPSTREAM_COMMIT
 
@@ -28,7 +28,7 @@ RUN git apply /tmp/native-credential-proxy.patch && \
     rm -rf .git /tmp/native-credential-proxy.patch
 
 
-FROM node:22-slim
+FROM node:24-slim@sha256:06e5c9f86bfa0aaa7163cf37a5eaa8805f16b9acb48e3f85645b09d459fc2a9f
 
 ARG UPSTREAM_VERSION
 ARG UPSTREAM_COMMIT
