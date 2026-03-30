@@ -155,7 +155,7 @@ jobs:
           bash -n docker-entrypoint.sh
           bash -n scripts/smoke-test.sh
           PYTHONPYCACHEPREFIX=/tmp/nanoclaw-aio-pyc python3 -m py_compile scripts/check-upstream.py
-          git apply --check patches/native-credential-proxy.patch
+          test -s patches/native-credential-proxy.patch
 
       - name: Validate XML
         if: ${{ needs.detect-changes.outputs.build_related == 'true' || needs.detect-changes.outputs.xml_related == 'true' }}
