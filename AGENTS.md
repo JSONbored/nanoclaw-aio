@@ -1,29 +1,40 @@
-# nanoclaw-aio Agent Notes
+# AGENTS.md
 
-`nanoclaw-aio` packages NanoClaw Telegram as a Telegram-first single-container Unraid deployment.
+This repository is part of a broader portfolio of Unraid-first AIO projects.
 
-## Runtime Shape
+## Repository intent
 
-- Upstream base: official `qwibitai/nanoclaw-telegram`
-- Official native credential proxy patch applied
-- Persistent runtime state under `/appdata`
-- Docker socket access required so NanoClaw can launch agent containers
+- This repo packages an opinionated, beginner-friendly Unraid AIO deployment.
+- Default behavior should optimize for a reliable first boot on Unraid.
+- Advanced users should retain escape hatches where supported.
 
-## Important Behavior
+## Engineering expectations
 
-- There is no web UI; Telegram is the control plane.
-- `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are mandatory for a real deployment.
-- If real credentials are missing, the container should wait safely for config instead of crash-looping.
-- The packaged image is currently validated for `linux/amd64`.
+- Prefer consistency with `unraid-aio-template` over one-off repo behavior.
+- Keep CI and release behavior aligned with the rest of the AIO fleet.
+- Respect protected branches and use PR-based automation for external sync flows.
+- Favor operational clarity over cleverness.
 
-## CI And Publish Policy
+## Release model
 
-- Validation and smoke tests should run on PRs and branch pushes.
-- Publish should happen only from the default branch.
-- GHCR image naming must stay lowercase.
+- Container packages publish automatically from `main`.
+- Formal changelog updates and GitHub Releases are release-driven.
+- Releases use `upstream version + aio revision`, for example `v1.2.42-aio.1`.
+- Keep changelog-friendly Conventional Commit titles and PR titles.
 
-## What To Preserve
+## Unraid expectations
 
-- Keep the code immutable inside the image and persist only runtime state.
-- Keep Telegram auto-registration and first-boot ergonomics intact.
-- Smoke tests should validate bootstrap, restart, and persistence in smoke mode.
+- Unraid-facing XML/icon assets should stay aligned with `awesome-unraid`.
+- User-facing metadata should remain accurate:
+  - `Project`
+  - `Support`
+  - `TemplateURL`
+  - `Icon`
+  - `Overview`
+  - `Category`
+
+## Documentation expectations
+
+- Be explicit about operational tradeoffs.
+- Do not imply the AIO model removes inherent complexity from the upstream software.
+- Keep beginner defaults simple, but document power-user override paths where they exist.
