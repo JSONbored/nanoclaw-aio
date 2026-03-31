@@ -47,6 +47,14 @@ Local validation completed on March 29, 2026:
 - build/security workflows were hardened with pinned action SHAs and upstream tracking
 - the wrapper was rebuilt around the official `qwibitai/nanoclaw-telegram` upstream instead of cloning an unpinned unrelated repo
 
+## Releases
+
+`nanoclaw-aio` uses upstream-version-plus-AIO-revision releases such as `v1.2.42-aio.1`.
+
+Every `main` build publishes `latest`, the exact pinned upstream version, an explicit packaging line tag, and `sha-<commit>`.
+
+See [docs/releases.md](/Users/shadowbook/Documents/nanoclaw-aio/docs/releases.md) for the release workflow details.
+
 ## Support
 
 - Issues: [JSONbored/nanoclaw-aio issues](https://github.com/JSONbored/nanoclaw-aio/issues)
