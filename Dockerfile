@@ -45,7 +45,7 @@ RUN git clone https://github.com/nanocoai/nanoclaw.git . && \
     if ! grep -q "^import './telegram.js';" src/channels/index.ts; then \
       printf "\nimport './telegram.js';\n" >> src/channels/index.ts; \
     fi && \
-    rm -rf /tmp/nanoclaw-channels .git
+    rm -rf /tmp/nanoclaw-channels
 
 COPY patches/unraid-host-paths.patch /tmp/unraid-host-paths.patch
 
@@ -55,7 +55,7 @@ RUN git apply /tmp/unraid-host-paths.patch && \
     pnpm install --frozen-lockfile && \
     pnpm install "@chat-adapter/telegram@${TELEGRAM_ADAPTER_VERSION}" && \
     pnpm run build && \
-    rm -rf /tmp/unraid-host-paths.patch ~/.local/share/pnpm/store
+    rm -rf .git /tmp/unraid-host-paths.patch ~/.local/share/pnpm/store
 
 FROM node:22-slim@sha256:689c11043dad91472750cd824c97dd5e2318e9dd6f954e492fe7af0135d33ceb
 

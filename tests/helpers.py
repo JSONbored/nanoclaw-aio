@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shlex
 import shutil
 import subprocess  # nosec B404
 import time
@@ -151,7 +152,7 @@ class ContainerHandle:
         raise AssertionError(f"Timed out waiting for log line {needle!r}\n{self.logs()}")
 
     def path_exists(self, path: str) -> bool:
-        return self.exec(f"test -e {path}", check=False).returncode == 0
+        return self.exec(f"test -e {shlex.quote(path)}", check=False).returncode == 0
 
     def read_file(self, path: str) -> str:
-        return self.exec(f"cat {path}").stdout
+        return self.exec(f"cat {shlex.quote(path)}").stdout
