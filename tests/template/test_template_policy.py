@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 import re
+import shutil
 import subprocess  # nosec B404
-import xml.etree.ElementTree as ET
-from pathlib import Path
+import xml.etree.ElementTree as ET  # nosec B405
 
 from tests.conftest import REPO_ROOT
 
 
 def _xml_root() -> ET.Element:
-    return ET.parse(REPO_ROOT / "nanoclaw-aio.xml").getroot()
+    return ET.parse(REPO_ROOT / "nanoclaw-aio.xml").getroot()  # nosec B314
 
 
 def _configs() -> dict[str, ET.Element]:
@@ -36,7 +36,9 @@ def test_xml_parses_and_uses_v2_public_identity() -> None:
 
     assert root.findtext("Name") == "nanoclaw-aio"  # nosec B101
     assert root.findtext("Repository") == "jsonbored/nanoclaw-aio:latest"  # nosec B101
-    assert root.findtext("Registry") == "https://hub.docker.com/r/jsonbored/nanoclaw-aio"  # nosec B101
+    assert (
+        root.findtext("Registry") == "https://hub.docker.com/r/jsonbored/nanoclaw-aio"
+    )  # nosec B101
     assert root.findtext("TemplateURL") == (  # nosec B101
         "https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/nanoclaw-aio.xml"
     )
@@ -114,15 +116,24 @@ def test_dockerfiles_pin_upstream_and_component_versions() -> None:
     assert (  # nosec B101
         _arg_value("components/nanoclaw-agent/Dockerfile", "AGENT_REVISION") == "1"
     )
-    assert "CLAUDE_CODE_VERSION=2.1.128" in _read("components/nanoclaw-agent/Dockerfile")  # nosec B101
-    assert "BUN_VERSION=1.3.12" in _read("components/nanoclaw-agent/Dockerfile")  # nosec B101
-    assert "PNPM_VERSION=10.33.0" in _read("components/nanoclaw-agent/Dockerfile")  # nosec B101
+    assert "CLAUDE_CODE_VERSION=2.1.128" in _read(
+        "components/nanoclaw-agent/Dockerfile"
+    )  # nosec B101
+    assert "BUN_VERSION=1.3.12" in _read(
+        "components/nanoclaw-agent/Dockerfile"
+    )  # nosec B101
+    assert "PNPM_VERSION=10.33.0" in _read(
+        "components/nanoclaw-agent/Dockerfile"
+    )  # nosec B101
 
 
 def test_aio_defaults_point_to_paired_agent_image() -> None:
     dockerfile = _read("Dockerfile")
 
-    assert 'CONTAINER_IMAGE="jsonbored/nanoclaw-agent:${UPSTREAM_VERSION}-agent.1"' in dockerfile  # nosec B101
+    assert (
+        'CONTAINER_IMAGE="jsonbored/nanoclaw-agent:${UPSTREAM_VERSION}-agent.1"'
+        in dockerfile
+    )  # nosec B101
     assert 'CONTAINER_IMAGE_BASE="jsonbored/nanoclaw-agent"' in dockerfile  # nosec B101
     assert "patches/unraid-host-paths.patch" in dockerfile  # nosec B101
 
@@ -156,8 +167,11 @@ def test_no_standalone_agent_unraid_template_exists() -> None:
 
 
 def test_no_stale_upstream_submodule_gitlink() -> None:
+    git = shutil.which("git")
+    assert git is not None  # nosec B101
+
     result = subprocess.run(  # nosec B603
-        ["git", "ls-files", "--stage", "upstream"],
+        [git, "ls-files", "--stage", "upstream"],
         cwd=REPO_ROOT,
         check=True,
         capture_output=True,

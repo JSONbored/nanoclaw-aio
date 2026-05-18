@@ -4,6 +4,7 @@ import os
 import shlex
 import shutil
 import subprocess  # nosec B404
+import tempfile
 import time
 import uuid
 from collections.abc import Iterator
@@ -37,10 +38,15 @@ def docker_available() -> bool:
 
 
 def docker_image_exists(image_tag: str) -> bool:
-    return run_command(["docker", "image", "inspect", image_tag], check=False).returncode == 0
+    return (
+        run_command(["docker", "image", "inspect", image_tag], check=False).returncode
+        == 0
+    )
 
 
-def ensure_image(image_tag: str, *, context: str = ".", dockerfile: str = "Dockerfile") -> None:
+def ensure_image(
+    image_tag: str, *, context: str = ".", dockerfile: str = "Dockerfile"
+) -> None:
     env_key = "NANOCLAW_AIO_PYTEST_USE_PREBUILT_IMAGE"
     if os.environ.get(env_key) == "true":
         if not docker_image_exists(image_tag):
@@ -63,12 +69,8 @@ def ensure_image(image_tag: str, *, context: str = ".", dockerfile: str = "Docke
 
 @contextmanager
 def temp_dir(prefix: str) -> Iterator[Path]:
-    path = Path("/tmp") / f"{prefix}-{uuid.uuid4().hex[:10]}"
-    path.mkdir(parents=True)
-    try:
-        yield path
-    finally:
-        shutil.rmtree(path, ignore_errors=True)
+    with tempfile.TemporaryDirectory(prefix=f"{prefix}-") as path:
+        yield Path(path)
 
 
 class DockerRuntime:
@@ -83,7 +85,9 @@ class DockerRuntime:
         return result.stdout + result.stderr
 
     def inspect_state(self, name: str, field: str) -> str:
-        result = run_command(["docker", "inspect", "-f", f"{{{{.{field}}}}}", name], check=False)
+        result = run_command(
+            ["docker", "inspect", "-f", f"{{{{.{field}}}}}", name], check=False
+        )
         return result.stdout.strip() if result.returncode == 0 else ""
 
     def remove(self, name: str) -> None:
@@ -134,8 +138,12 @@ class ContainerHandle:
     def logs(self) -> str:
         return self.runtime.logs(self.name)
 
-    def exec(self, command: str, *, check: bool = True) -> subprocess.CompletedProcess[str]:
-        return run_command(["docker", "exec", self.name, "bash", "-lc", command], check=check)
+    def exec(
+        self, command: str, *, check: bool = True
+    ) -> subprocess.CompletedProcess[str]:
+        return run_command(
+            ["docker", "exec", self.name, "bash", "-lc", command], check=check
+        )
 
     def restart(self) -> None:
         run_command(["docker", "restart", self.name])
@@ -149,7 +157,9 @@ class ContainerHandle:
             if needle in self.logs():
                 return
             time.sleep(1)
-        raise AssertionError(f"Timed out waiting for log line {needle!r}\n{self.logs()}")
+        raise AssertionError(
+            f"Timed out waiting for log line {needle!r}\n{self.logs()}"
+        )
 
     def path_exists(self, path: str) -> bool:
         return self.exec(f"test -e {shlex.quote(path)}", check=False).returncode == 0

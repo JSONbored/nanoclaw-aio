@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1.7@sha256:2780b5c3bab67f1f76c781860de469442999ed1a0d7992a5efdf2cffc0e3d769
+# checkov:skip=CKV_DOCKER_2: The agent image is a short-lived helper process spawned by nanoclaw-aio, not a standalone service.
 # checkov:skip=CKV_DOCKER_3: NanoClaw's upstream agent image runs as node after root installs browser and CLI dependencies.
 # checkov:skip=CKV_DOCKER_7: NanoClaw is pinned by release tag and commit SHA because the helper image is built from upstream source.
 
@@ -38,6 +39,7 @@ LABEL org.opencontainers.image.source="https://github.com/JSONbored/nanoclaw-aio
       io.jsonbored.nanoclaw.agent_revision="${AGENT_REVISION}" \
       io.jsonbored.nanoclaw.claude_code_version="${CLAUDE_CODE_VERSION}"
 
+# hadolint ignore=DL3008
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
@@ -73,9 +75,10 @@ ENV AGENT_BROWSER_EXECUTABLE_PATH="/usr/bin/chromium" \
     PNPM_HOME="/pnpm" \
     PATH="/pnpm:${PATH}"
 
-RUN curl -fsSL https://bun.sh/install | bash -s "bun-v${BUN_VERSION}" && \
+RUN curl -fsSL https://bun.sh/install -o /tmp/bun-install.sh && \
+    bash /tmp/bun-install.sh "bun-v${BUN_VERSION}" && \
     install -m 0755 /root/.bun/bin/bun /usr/local/bin/bun && \
-    rm -rf /root/.bun
+    rm -rf /root/.bun /tmp/bun-install.sh
 
 WORKDIR /app
 
@@ -84,9 +87,9 @@ COPY --from=source /src/container/agent-runner/package.json /src/container/agent
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile
 
-RUN corepack enable && corepack prepare "pnpm@${PNPM_VERSION}" --activate
-
 RUN --mount=type=cache,target=/root/.cache/pnpm \
+    corepack enable && \
+    corepack prepare "pnpm@${PNPM_VERSION}" --activate && \
     echo "only-built-dependencies[]=agent-browser" > /root/.npmrc && \
     echo "only-built-dependencies[]=@anthropic-ai/claude-code" >> /root/.npmrc && \
     pnpm install -g "vercel@${VERCEL_VERSION}"
@@ -95,9 +98,8 @@ RUN --mount=type=cache,target=/root/.cache/pnpm \
     pnpm install -g "agent-browser@${AGENT_BROWSER_VERSION}"
 
 RUN --mount=type=cache,target=/root/.cache/pnpm \
-    pnpm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
-
-RUN printf '#!/bin/sh\nexec bun /app/src/cli/ncl.ts "$@"\n' > /usr/local/bin/ncl && \
+    pnpm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" && \
+    printf '#!/bin/sh\nexec bun /app/src/cli/ncl.ts "$@"\n' > /usr/local/bin/ncl && \
     chmod +x /usr/local/bin/ncl
 
 COPY --from=source /src/container/entrypoint.sh /app/entrypoint.sh

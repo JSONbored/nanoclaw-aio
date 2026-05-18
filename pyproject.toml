@@ -1,9 +1,7 @@
 [tool.pytest.ini_options]
 addopts = "--strict-markers"
 testpaths = ["tests"]
-markers = [
-  "integration: Docker-backed container integration tests",
-]
+markers = ["integration: Docker-backed container integration tests"]
 
 [tool.ruff]
 line-length = 100
