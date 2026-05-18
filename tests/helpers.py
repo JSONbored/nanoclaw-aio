@@ -69,8 +69,11 @@ def ensure_image(
 
 @contextmanager
 def temp_dir(prefix: str) -> Iterator[Path]:
-    with tempfile.TemporaryDirectory(prefix=f"{prefix}-") as path:
-        yield Path(path)
+    path = Path(tempfile.mkdtemp(prefix=f"{prefix}-"))
+    try:
+        yield path
+    finally:
+        shutil.rmtree(path, ignore_errors=True)
 
 
 class DockerRuntime:
