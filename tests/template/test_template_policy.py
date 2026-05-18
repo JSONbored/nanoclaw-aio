@@ -94,6 +94,12 @@ def test_xml_parses_and_uses_v2_public_identity() -> None:
         "https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/icons/nanoclaw.webp"
     )
     assert root.findtext("Beta") == "True"  # nosec B101
+    assert root.find("MyIP") is not None  # nosec B101
+    assert root.find("ExtraParams") is not None  # nosec B101
+    assert root.find("PostArgs") is not None  # nosec B101
+    assert root.find("CPUset") is not None  # nosec B101
+    assert root.find("DateInstalled") is not None  # nosec B101
+    assert root.find("Description") is not None  # nosec B101
 
 
 def test_xml_uses_current_ca_category_tokens() -> None:
@@ -150,6 +156,21 @@ def test_xml_overview_warns_about_beta_docker_socket_and_pairing() -> None:
         "/appdata",
     ]:
         assert phrase in overview  # nosec B101
+
+
+def test_xml_overview_uses_fleet_ca_description_format() -> None:
+    xml = _read("nanoclaw-aio.xml")
+    requires = _xml_root().findtext("Requires") or ""
+
+    assert "<Overview>NanoClaw is" in xml  # nosec B101
+    assert "<Overview>\n" not in xml  # nosec B101
+    assert "[b]All-In-One Unraid Edition[/b]&#xD;" in xml  # nosec B101
+    assert "[b]Quick Install (Beginners)[/b]&#xD;" in xml  # nosec B101
+    assert "[b]Power Users (Advanced View)[/b]&#xD;" in xml  # nosec B101
+    assert "[b]Important Notes[/b]&#xD;" in xml  # nosec B101
+    assert "[code]TELEGRAM_BOT_TOKEN[/code]" in xml  # nosec B101
+    assert "host-level Docker control" in requires  # nosec B101
+    assert "jsonbored/nanoclaw-agent" in requires  # nosec B101
 
 
 def test_dockerfiles_pin_upstream_and_component_versions() -> None:
