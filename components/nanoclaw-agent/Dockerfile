@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7@sha256:2780b5c3bab67f1f76c781860de469442999ed1a0d7992a5efdf2cffc0e3d769
+# syntax=docker/dockerfile:1.24@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89
 # checkov:skip=CKV_DOCKER_2: The agent image is a short-lived helper process spawned by nanoclaw-aio, not a standalone service.
 # checkov:skip=CKV_DOCKER_3: NanoClaw's upstream agent image runs as node after root installs browser and CLI dependencies.
 # checkov:skip=CKV_DOCKER_7: NanoClaw is pinned by release tag and commit SHA because the helper image is built from upstream source.
@@ -7,7 +7,7 @@ ARG UPSTREAM_VERSION=v2.0.63
 ARG UPSTREAM_COMMIT=975a2f0f5b0ea19bbf35fadfd394df35e5341d3a
 ARG AGENT_REVISION=1
 
-FROM alpine/git:2.49.1@sha256:c0280cf9572316299b08544065d3bf35db65043d5e3963982ec50647d2746e26 AS source
+FROM alpine/git:v2.52.0@sha256:d453f54c83320412aa89c391b076930bd8569bc1012285e8c68ce2d4435826a3 AS source
 
 ARG UPSTREAM_COMMIT
 
