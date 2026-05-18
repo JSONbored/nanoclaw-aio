@@ -27,7 +27,31 @@ index 7201bfc..6ee7406 100644
      }
    }
  
-@@ -499,7 +506,10 @@ export async function buildAgentGroupImage(agentGroupId: string): Promise<void>
+@@ -477,17 +484,20 @@ export async function buildAgentGroupImage(agentGroupId: string): Promise<void>
+     throw new Error('No packages to install. Use install_packages first.');
+   }
+ 
++  const shellQuote = (value: string): string => `'${value.replace(/'/g, `'\''`)}'`;
+   let dockerfile = `FROM ${CONTAINER_IMAGE}\nUSER root\n`;
+   if (aptPackages.length > 0) {
+-    dockerfile += `RUN apt-get update && apt-get install -y ${aptPackages.join(' ')} && rm -rf /var/lib/apt/lists/*\n`;
++    dockerfile += `RUN apt-get update && apt-get install -y ${aptPackages.map(shellQuote).join(' ')} && rm -rf /var/lib/apt/lists/*\n`;
+   }
+   if (npmPackages.length > 0) {
+     // pnpm skips build scripts unless packages are allowlisted. Append each
+     // to /root/.npmrc (base image sets it up for agent-browser) so packages
+     // with postinstall — e.g. playwright, puppeteer, native addons — don't
+     // install silently broken.
+-    const allowlist = npmPackages.map((p) => `echo 'only-built-dependencies[]=${p}' >> /root/.npmrc`).join(' && ');
+-    dockerfile += `RUN ${allowlist} && pnpm install -g ${npmPackages.join(' ')}\n`;
++    const allowlist = npmPackages
++      .map((p) => `echo ${shellQuote(`only-built-dependencies[]=${p}`)} >> /root/.npmrc`)
++      .join(' && ');
++    dockerfile += `RUN ${allowlist} && pnpm install -g ${npmPackages.map(shellQuote).join(' ')}\n`;
+   }
+   dockerfile += 'USER node\n';
+ 
+@@ -499,7 +509,10 @@ export async function buildAgentGroupImage(agentGroupId: string): Promise<void>
    const tmpDockerfile = path.join(DATA_DIR, `Dockerfile.${agentGroupId}`);
    fs.writeFileSync(tmpDockerfile, dockerfile);
    try {
@@ -35,7 +59,7 @@ index 7201bfc..6ee7406 100644
 +    const shellQuote = (value: string): string => `'${value.replace(/'/g, `'\''`)}'`;
 +    const dockerfileForHost = hostMountPath(tmpDockerfile);
 +    const buildContextForHost = hostMountPath(DATA_DIR);
-+    execSync(`${CONTAINER_RUNTIME_BIN} build -t ${imageTag} -f ${shellQuote(dockerfileForHost)} ${shellQuote(buildContextForHost)}`, {
++    execSync(`${CONTAINER_RUNTIME_BIN} build -t ${shellQuote(imageTag)} -f ${shellQuote(dockerfileForHost)} ${shellQuote(buildContextForHost)}`, {
        cwd: DATA_DIR,
        stdio: 'pipe',
        timeout: 900_000,

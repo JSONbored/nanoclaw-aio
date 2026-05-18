@@ -126,6 +126,15 @@ def test_aio_defaults_point_to_paired_agent_image() -> None:
     assert "patches/unraid-host-paths.patch" in dockerfile  # nosec B101
 
 
+def test_unraid_overlay_quotes_dynamic_docker_build_inputs() -> None:
+    patch = _read("patches/unraid-host-paths.patch")
+
+    assert "aptPackages.map(shellQuote)" in patch  # nosec B101
+    assert "npmPackages.map(shellQuote)" in patch  # nosec B101
+    assert "shellQuote(`only-built-dependencies[]=${p}`)" in patch  # nosec B101
+    assert "build -t ${shellQuote(imageTag)}" in patch  # nosec B101
+
+
 def test_docs_and_templates_do_not_expose_local_paths_or_stale_upstream() -> None:
     checked_paths = [
         path
