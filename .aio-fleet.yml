@@ -1,0 +1,103 @@
+schema_version: 1
+repo: nanoclaw-aio
+github_repo: JSONbored/nanoclaw-aio
+app_slug: nanoclaw-aio
+image:
+  name: jsonbored/nanoclaw-aio
+  cache_scope: nanoclaw-aio-image
+  pytest_tag: nanoclaw-aio:pytest
+  publish_platforms: linux/amd64
+release:
+  name: NanoClaw-AIO
+  profile: multi-component
+  previous_tag_command: latest-aio-tag
+runtime:
+  supervisor: tini
+upstream:
+  name: NanoClaw
+  version_key: UPSTREAM_VERSION
+  commit_key: UPSTREAM_COMMIT
+  components:
+    - nanoclaw-aio
+    - nanoclaw-agent
+  monitor:
+    - component: aio
+      name: NanoClaw
+      source: github-releases
+      repo: nanocoai/nanoclaw
+      dockerfile: Dockerfile
+      version_key: UPSTREAM_VERSION
+      stable_only: true
+      strategy: pr
+      release_notes_url: https://github.com/nanocoai/nanoclaw/releases
+    - component: agent
+      name: NanoClaw Agent
+      source: github-releases
+      repo: nanocoai/nanoclaw
+      dockerfile: components/nanoclaw-agent/Dockerfile
+      version_key: UPSTREAM_VERSION
+      stable_only: true
+      strategy: pr
+      release_notes_url: https://github.com/nanocoai/nanoclaw/releases
+template:
+  xml_paths:
+    - nanoclaw-aio.xml
+  generated: false
+catalog:
+  published: true
+  assets:
+    - source: nanoclaw-aio.xml
+      target: nanoclaw-aio.xml
+tests:
+  unit: tests/template
+  integration: tests/integration -m integration
+  checkout_submodules: false
+components:
+  aio:
+    image_name: jsonbored/nanoclaw-aio
+    dockerfile: Dockerfile
+    upstream_config: upstream.toml
+    docker_cache_scope: nanoclaw-aio-image
+    oci_description: Telegram-first Unraid AIO wrapper for NanoClaw v2
+    release_suffix: aio
+    floating_tags:
+      - latest
+    upstream_version_key: UPSTREAM_VERSION
+    xml_paths:
+      - nanoclaw-aio.xml
+  agent:
+    image_name: jsonbored/nanoclaw-agent
+    dockerfile: components/nanoclaw-agent/Dockerfile
+    context: components/nanoclaw-agent
+    upstream_config: upstream.toml
+    docker_cache_scope: nanoclaw-agent-image
+    oci_description: Helper sandbox image spawned by nanoclaw-aio
+    release_policy: registry_only
+    release_suffix: agent
+    registry_revision_arg: AGENT_REVISION
+    floating_tags:
+      - latest
+    upstream_version_key: UPSTREAM_VERSION
+validation:
+  docker_socket_required: true
+  required_targets:
+    - /appdata
+    - /var/run/docker.sock
+    - TELEGRAM_BOT_TOKEN
+    - ANTHROPIC_API_KEY
+    - CLAUDE_CODE_OAUTH_TOKEN
+    - ANTHROPIC_AUTH_TOKEN
+    - ANTHROPIC_BASE_URL
+    - ONECLI_URL
+    - ONECLI_API_KEY
+    - CONTAINER_IMAGE
+    - CONTAINER_IMAGE_BASE
+    - CONTAINER_TIMEOUT
+    - IDLE_TIMEOUT
+    - CONTAINER_MAX_OUTPUT_SIZE
+    - MAX_MESSAGES_PER_PROMPT
+    - MAX_CONCURRENT_CONTAINERS
+    - LOG_LEVEL
+    - ASSISTANT_NAME
+    - ASSISTANT_HAS_OWN_NUMBER
+    - TZ

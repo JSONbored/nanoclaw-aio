@@ -1,69 +1,88 @@
 # nanoclaw-aio
 
-NanoClaw packaged as a Telegram-first All-In-One Unraid container.
+NanoClaw packaged as a Telegram-first Unraid AIO container.
 
-`nanoclaw-aio` wraps the official NanoClaw Telegram fork with the official native credential proxy patch so the stack can run from a single Unraid container without needing a separate OneCLI service. The image keeps the NanoClaw code immutable inside the container and persists only runtime state under `/appdata`, which makes upgrades much safer than mounting the whole project directory.
+This repo ships one installable Unraid app and two container images from the same source repo:
 
-## What This Repo Ships
+- `jsonbored/nanoclaw-aio`: the Unraid app container
+- `jsonbored/nanoclaw-agent`: the nested helper image spawned by NanoClaw for isolated agent work
 
-- A single-container `ghcr.io/jsonbored/nanoclaw-aio:latest` image
-- Explicit image tags matching the pinned upstream NanoClaw Telegram version, plus `latest` and `sha-...`
-- An Unraid CA template at [nanoclaw-aio.xml](/tmp/nanoclaw-aio/nanoclaw-aio.xml)
-- A local smoke test at [scripts/smoke-test.sh](/tmp/nanoclaw-aio/scripts/smoke-test.sh)
-- Upstream version tracking via [upstream.toml](/tmp/nanoclaw-aio/upstream.toml) and [scripts/check-upstream.py](/tmp/nanoclaw-aio/scripts/check-upstream.py)
-- Automated `awesome-unraid` sync for the XML
+`nanoclaw-agent` is not a separate Community Apps template right now. It is a sandbox/helper image used by `nanoclaw-aio`.
 
-## Included Behavior
+## Current Version
 
-- Official `qwibitai/nanoclaw-telegram` code pinned to a specific upstream commit
-- Official native credential proxy patch applied so Anthropic credentials can stay in `.env`
-- Telegram main-chat auto-registration on first boot
-- Persistent NanoClaw state under `/appdata`
-- Docker socket access so NanoClaw can launch isolated agent containers
+- Upstream NanoClaw: [`nanocoai/nanoclaw` `v2.0.63`](https://github.com/nanocoai/nanoclaw/releases/tag/v2.0.63)
+- Upstream commit: `975a2f0f5b0ea19bbf35fadfd394df35e5341d3a`
+- Channels branch commit: `8e91d37bc9c14b06580bda4b46c85f33cf755b15`
+- AIO image tag: `v2.0.63-aio.1`
+- Agent helper image tag: `v2.0.63-agent.1`
 
-## Important Runtime Notes
+NanoClaw `main` may move ahead of the latest release. This package tracks stable upstream releases, not unreleased `main`.
 
-- This image is currently packaged and validated for `linux/amd64`.
-- There is no web UI. NanoClaw is controlled through Telegram.
-- `/appdata` persists groups, database state, credential-proxy config, sessions, and task data.
-- `/var/run/docker.sock` must be mounted so NanoClaw can start agent containers.
-- `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are required for a real working deployment. If they are missing, the container stays up in a waiting-for-config state instead of crash-looping.
+## Runtime Model
+
+NanoClaw v2 controls agents through Telegram and launches short-lived helper containers through Docker. On Unraid that means:
+
+- `/appdata` persists databases, logs, groups, channel state, env files, and host-visible runtime source used by helper containers.
+- `/var/run/docker.sock` is required so the AIO container can start `jsonbored/nanoclaw-agent` sibling containers.
+- `NANOCLAW_HOST_APPDATA_DIR` must match the host path mounted to `/appdata`; the default is `/mnt/user/appdata/nanoclaw-aio`.
+- First boot waits for `TELEGRAM_BOT_TOKEN` and one Claude credential, then emits a Telegram pairing code in the container logs.
+
+Docker socket access is host-level trust. This wrapper makes that requirement explicit instead of hiding it.
 
 ## Quick Start
 
-1. Install the Unraid template.
-2. Set `ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`, and `TELEGRAM_CHAT_ID`.
-3. Keep `AUTO_SETUP_TELEGRAM=true` unless you want to register groups manually later.
-4. Mount the Docker socket.
-5. Start the container and watch the logs for first-boot registration.
+1. Install the `nanoclaw-aio` Unraid template.
+2. Keep the default `/appdata` path unless you also update `NANOCLAW_HOST_APPDATA_DIR`.
+3. Mount `/var/run/docker.sock`.
+4. Set `TELEGRAM_BOT_TOKEN`.
+5. Set one Claude credential: `ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`, or `ANTHROPIC_AUTH_TOKEN`.
+6. Start the container and watch logs for `PAIR_TELEGRAM_CODE`.
+7. Send that code to your Telegram bot to pair the main chat.
+
+## Image Tags
+
+`jsonbored/nanoclaw-aio` publishes:
+
+- `latest`
+- `v2.0.63`
+- `v2.0.63-aio.1`
+- `sha-<commit>`
+
+`jsonbored/nanoclaw-agent` publishes:
+
+- `latest`
+- `v2.0.63`
+- `v2.0.63-agent.1`
+- `sha-<commit>`
+
+Both Docker Hub and GHCR receive the same tags.
 
 ## Validation
 
-Local validation completed on March 29, 2026:
+Local source validation:
 
-- explicit `linux/amd64` Docker build succeeded
-- local smoke test passed end-to-end in bootstrap mode
-- restart and persistence coverage added for `/appdata`
-- build/security workflows were hardened with pinned action SHAs and upstream tracking
-- the wrapper was rebuilt around the official `qwibitai/nanoclaw-telegram` upstream instead of cloning an unpinned unrelated repo
+```bash
+python -m pytest tests/template
+```
 
-## Releases
+Container validation:
 
-`nanoclaw-aio` uses upstream-version-plus-AIO-revision releases such as `v1.2.42-aio.1`.
+```bash
+python -m pytest tests/integration -m integration
+```
 
-Every `main` build publishes `latest`, the exact pinned upstream version, an explicit packaging line tag, and `sha-<commit>`.
-
-See [docs/releases.md](/Users/shadowbook/Documents/nanoclaw-aio/docs/releases.md) for the release workflow details.
+The integration suite builds both images, verifies missing-config and smoke-mode behavior, checks appdata persistence, checks the configured agent image, and confirms a missing Docker socket produces a clear waiting state.
 
 ## Support
 
+- AIO repo: [JSONbored/nanoclaw-aio](https://github.com/JSONbored/nanoclaw-aio)
+- Upstream app: [nanocoai/nanoclaw](https://github.com/nanocoai/nanoclaw)
 - Issues: [JSONbored/nanoclaw-aio issues](https://github.com/JSONbored/nanoclaw-aio/issues)
-- Upstream app: [qwibitai/NanoClaw](https://github.com/qwibitai/NanoClaw)
-- Upstream Telegram fork: [qwibitai/nanoclaw-telegram](https://github.com/qwibitai/nanoclaw-telegram)
 
 ## Funding
 
-If this work saves you time, support it here:
+If this saves you time, support it here:
 
 - [GitHub Sponsors](https://github.com/sponsors/JSONbored)
 
