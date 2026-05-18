@@ -36,7 +36,9 @@ def test_missing_config_boots_to_healthy_waiting_state(runtime: DockerRuntime) -
             assert container.path_exists("/appdata/.bootstrap-complete")  # nosec B101
 
 
-def test_smoke_mode_initializes_appdata_and_survives_restart(runtime: DockerRuntime) -> None:
+def test_smoke_mode_initializes_appdata_and_survives_restart(
+    runtime: DockerRuntime,
+) -> None:
     with temp_dir("nanoclaw-aio-appdata") as appdata:
         with runtime.container(
             appdata=appdata,
@@ -45,16 +47,24 @@ def test_smoke_mode_initializes_appdata_and_survives_restart(runtime: DockerRunt
             container.wait_for_log("Smoke mode initialized /appdata")
             assert container.path_exists("/appdata/.smoke-ready")  # nosec B101
             assert container.path_exists("/appdata/runtime/data/env/env")  # nosec B101
-            assert container.path_exists("/appdata/runtime/groups/global/CLAUDE.md")  # nosec B101
-            assert container.path_exists("/appdata/runtime/container/agent-runner/src/index.ts")  # nosec B101
+            assert container.path_exists(
+                "/appdata/runtime/groups/global/CLAUDE.md"
+            )  # nosec B101
+            assert container.path_exists(
+                "/appdata/runtime/container/agent-runner/src/index.ts"
+            )  # nosec B101
 
             env_file = container.read_file("/appdata/runtime/data/env/env")
-            assert "CONTAINER_IMAGE=jsonbored/nanoclaw-agent:v2.0.63-agent.1" in env_file  # nosec B101
+            assert (
+                "CONTAINER_IMAGE=jsonbored/nanoclaw-agent:v2.0.63-agent.1" in env_file
+            )  # nosec B101
             assert f"NANOCLAW_HOST_APPDATA_DIR={appdata}" in env_file  # nosec B101
 
             container.restart()
             container.wait_for_log("Smoke mode initialized /appdata")
-            assert container.path_exists("/appdata/runtime/groups/main/CLAUDE.md")  # nosec B101
+            assert container.path_exists(
+                "/appdata/runtime/groups/main/CLAUDE.md"
+            )  # nosec B101
 
 
 def test_missing_docker_socket_is_clear_when_credentials_are_present(
@@ -64,13 +74,15 @@ def test_missing_docker_socket_is_clear_when_credentials_are_present(
         with runtime.container(
             appdata=appdata,
             env_overrides={
-                "TELEGRAM_BOT_TOKEN": "1234567890:abcdefghijklmnopqrstuvwxyzABCDEFGHI",
+                "TELEGRAM_BOT_TOKEN": "test-token",  # nosec B105
                 "ANTHROPIC_API_KEY": "test-key",
             },
         ) as container:
             container.wait_for_log("Docker socket is required")
             assert container.is_running()  # nosec B101
-            assert container.path_exists("/appdata/.docker-socket-missing")  # nosec B101
+            assert container.path_exists(
+                "/appdata/.docker-socket-missing"
+            )  # nosec B101
 
 
 def test_smoke_mode_can_see_configured_agent_image(runtime: DockerRuntime) -> None:
@@ -88,5 +100,5 @@ def test_smoke_mode_can_see_configured_agent_image(runtime: DockerRuntime) -> No
             },
         ) as container:
             container.wait_for_log("Smoke mode initialized /appdata")
-            result = container.exec("docker image inspect \"$CONTAINER_IMAGE\"")
+            result = container.exec('docker image inspect "$CONTAINER_IMAGE"')
             assert AGENT_IMAGE in result.stdout  # nosec B101
