@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 ### Tests
 
 - Add pytest coverage for XML metadata, Dockerfile pins, image/tag identity, v2 env surface, and runtime smoke behavior.
+- Add a release-readiness guard that fails if the stale upstream gitlink returns and breaks fleet checkout.
 
 ### Notes
 
