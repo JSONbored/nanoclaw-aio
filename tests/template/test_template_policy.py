@@ -61,7 +61,7 @@ def _aio_fleet_required_targets() -> set[str]:
         if in_required_targets and stripped and indent <= required_targets_indent:
             break
         if in_required_targets and stripped.startswith("- "):
-            targets.add(stripped[2:].strip().strip('"\''))
+            targets.add(stripped[2:].strip().strip("\"'"))
 
     assert targets, ".aio-fleet.yml missing validation.required_targets"  # nosec B101
     return targets
@@ -86,7 +86,9 @@ def test_xml_parses_and_uses_v2_public_identity() -> None:
     assert (
         root.findtext("Registry") == "https://hub.docker.com/r/jsonbored/nanoclaw-aio"
     )  # nosec B101
-    assert root.findtext("Project") == "https://github.com/JSONbored/nanoclaw-aio"  # nosec B101
+    assert root.findtext("Project") == (  # nosec B101
+        "https://github.com/JSONbored/nanoclaw-aio"
+    )
     assert root.findtext("TemplateURL") == (  # nosec B101
         "https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/nanoclaw-aio.xml"
     )
