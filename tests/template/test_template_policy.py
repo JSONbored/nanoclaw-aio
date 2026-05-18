@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import subprocess  # nosec B404
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -152,3 +153,15 @@ def test_docs_and_templates_do_not_expose_local_paths_or_stale_upstream() -> Non
 
 def test_no_standalone_agent_unraid_template_exists() -> None:
     assert not (REPO_ROOT / "nanoclaw-agent.xml").exists()  # nosec B101
+
+
+def test_no_stale_upstream_submodule_gitlink() -> None:
+    result = subprocess.run(  # nosec B603
+        ["git", "ls-files", "--stage", "upstream"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.stdout.strip() == ""  # nosec B101
