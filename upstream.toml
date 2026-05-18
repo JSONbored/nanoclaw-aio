@@ -1,15 +1,17 @@
 [upstream]
-name = "NanoClaw Telegram"
-type = "github-file-version"
-repo = "qwibitai/nanoclaw-telegram"
-ref = "main"
-version_file = "package.json"
-version_field = "version"
-version_prefix = "v"
+name = "NanoClaw"
+type = "github-releases"
+repo = "nanocoai/nanoclaw"
 version_source = "dockerfile-arg"
 version_key = "UPSTREAM_VERSION"
 commit_key = "UPSTREAM_COMMIT"
 strategy = "pr"
+stable_only = true
+
+[channels]
+repo = "nanocoai/nanoclaw"
+ref = "channels"
+commit_key = "CHANNELS_COMMIT"
 
 [notifications]
-release_notes_url = "https://github.com/qwibitai/nanoclaw-telegram"
+release_notes_url = "https://github.com/nanocoai/nanoclaw/releases"

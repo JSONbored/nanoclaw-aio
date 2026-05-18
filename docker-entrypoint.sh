@@ -1,22 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_ROOT="/opt/nanoclaw"
+INSTALL_ROOT="/opt/nanoclaw"
 DEFAULT_GROUPS_DIR="/opt/nanoclaw-default-groups"
-APPDATA_DIR="/appdata"
+APPDATA_DIR="${NANOCLAW_CONTAINER_APPDATA_DIR:-/appdata}"
+RUNTIME_ROOT="${APPDATA_DIR}/runtime"
 WAITING_MARKER="${APPDATA_DIR}/.waiting-for-config"
 READY_MARKER="${APPDATA_DIR}/.bootstrap-complete"
 SMOKE_MARKER="${APPDATA_DIR}/.smoke-ready"
+SOCKET_FAILURE_MARKER="${APPDATA_DIR}/.docker-socket-missing"
 TELEGRAM_MARKER="${APPDATA_DIR}/.telegram_setup_complete"
+PAIRING_LOG="${APPDATA_DIR}/logs/telegram-pairing.log"
 
 log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] [nanoclaw-aio] $*"
 }
 
+truthy() {
+  case "${1:-}" in
+    true|TRUE|1|yes|YES|on|ON) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+run_as_node() {
+  gosu node "$@"
+}
+
 ensure_docker_group_access() {
   if [[ ! -S /var/run/docker.sock ]]; then
-    log "Docker socket not mounted at /var/run/docker.sock."
-    return
+    return 1
   fi
 
   local socket_gid group_name
@@ -29,88 +42,157 @@ ensure_docker_group_access() {
   fi
 
   usermod -aG "${group_name}" node >/dev/null 2>&1 || true
+  return 0
 }
 
-seed_persistent_layout() {
+seed_runtime_layout() {
   mkdir -p \
-    "${APPDATA_DIR}/store" \
-    "${APPDATA_DIR}/data" \
-    "${APPDATA_DIR}/groups" \
-    "${APPDATA_DIR}/config"
+    "${APPDATA_DIR}/logs" \
+    "${RUNTIME_ROOT}/config" \
+    "${RUNTIME_ROOT}/data/env" \
+    "${RUNTIME_ROOT}/groups" \
+    "${RUNTIME_ROOT}/logs" \
+    "${RUNTIME_ROOT}/store"
 
-  if [[ ! -f "${APPDATA_DIR}/groups/global/CLAUDE.md" ]]; then
-    mkdir -p "${APPDATA_DIR}/groups/global"
-    cp "${DEFAULT_GROUPS_DIR}/global/CLAUDE.md" "${APPDATA_DIR}/groups/global/CLAUDE.md"
+  if [[ ! -f "${RUNTIME_ROOT}/groups/global/CLAUDE.md" ]]; then
+    mkdir -p "${RUNTIME_ROOT}/groups/global"
+    cp "${DEFAULT_GROUPS_DIR}/global/CLAUDE.md" "${RUNTIME_ROOT}/groups/global/CLAUDE.md"
   fi
 
-  if [[ ! -f "${APPDATA_DIR}/groups/main/CLAUDE.md" ]]; then
-    mkdir -p "${APPDATA_DIR}/groups/main"
-    cp "${DEFAULT_GROUPS_DIR}/main/CLAUDE.md" "${APPDATA_DIR}/groups/main/CLAUDE.md"
+  if [[ ! -f "${RUNTIME_ROOT}/groups/main/CLAUDE.md" ]]; then
+    mkdir -p "${RUNTIME_ROOT}/groups/main"
+    cp "${DEFAULT_GROUPS_DIR}/main/CLAUDE.md" "${RUNTIME_ROOT}/groups/main/CLAUDE.md"
   fi
+
+  rm -rf \
+    "${RUNTIME_ROOT}/container/agent-runner/src" \
+    "${RUNTIME_ROOT}/container/skills" \
+    "${RUNTIME_ROOT}/container/CLAUDE.md"
+  mkdir -p "${RUNTIME_ROOT}/container/agent-runner"
+  cp -a "${INSTALL_ROOT}/container/agent-runner/src" "${RUNTIME_ROOT}/container/agent-runner/src"
+  cp -a "${INSTALL_ROOT}/container/skills" "${RUNTIME_ROOT}/container/skills"
+  cp -a "${INSTALL_ROOT}/container/CLAUDE.md" "${RUNTIME_ROOT}/container/CLAUDE.md"
+
+  ln -sfn "${INSTALL_ROOT}/bin" "${RUNTIME_ROOT}/bin"
+  ln -sfn "${INSTALL_ROOT}/dist" "${RUNTIME_ROOT}/dist"
+  ln -sfn "${INSTALL_ROOT}/node_modules" "${RUNTIME_ROOT}/node_modules"
+  ln -sfn "${INSTALL_ROOT}/package.json" "${RUNTIME_ROOT}/package.json"
+  ln -sfn "${INSTALL_ROOT}/pnpm-lock.yaml" "${RUNTIME_ROOT}/pnpm-lock.yaml"
+  ln -sfn "${INSTALL_ROOT}/setup" "${RUNTIME_ROOT}/setup"
+  ln -sfn "${INSTALL_ROOT}/src" "${RUNTIME_ROOT}/src"
 
   mkdir -p /home/node/.config
   rm -rf /home/node/.config/nanoclaw
-  ln -s "${APPDATA_DIR}/config" /home/node/.config/nanoclaw
+  ln -s "${RUNTIME_ROOT}/config" /home/node/.config/nanoclaw
 
-  rm -rf "${PROJECT_ROOT}/store" "${PROJECT_ROOT}/data" "${PROJECT_ROOT}/groups"
-  ln -s "${APPDATA_DIR}/store" "${PROJECT_ROOT}/store"
-  ln -s "${APPDATA_DIR}/data" "${PROJECT_ROOT}/data"
-  ln -s "${APPDATA_DIR}/groups" "${PROJECT_ROOT}/groups"
-
+  printf '%s\n' "${NANOCLAW_AIO_VERSION:-unknown}" > "${APPDATA_DIR}/.runtime-version"
   chown -R node:node "${APPDATA_DIR}" /home/node/.config
 }
 
 write_runtime_env() {
-  cat > "${PROJECT_ROOT}/.env" <<EOF
-ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN:-}
-ANTHROPIC_AUTH_TOKEN=${ANTHROPIC_AUTH_TOKEN:-}
-ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-}
-ASSISTANT_NAME=${ASSISTANT_NAME:-nanoclaw}
-TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
-TZ=${TZ:-UTC}
-EOF
-  chown node:node "${PROJECT_ROOT}/.env"
+  local env_file="${RUNTIME_ROOT}/.env"
+  local container_env_file="${RUNTIME_ROOT}/data/env/env"
+  local keys=(
+    ANTHROPIC_API_KEY
+    CLAUDE_CODE_OAUTH_TOKEN
+    ANTHROPIC_AUTH_TOKEN
+    ANTHROPIC_BASE_URL
+    ONECLI_URL
+    ONECLI_API_KEY
+    TELEGRAM_BOT_TOKEN
+    ASSISTANT_NAME
+    ASSISTANT_HAS_OWN_NUMBER
+    CONTAINER_IMAGE
+    CONTAINER_IMAGE_BASE
+    CONTAINER_TIMEOUT
+    IDLE_TIMEOUT
+    CONTAINER_MAX_OUTPUT_SIZE
+    MAX_MESSAGES_PER_PROMPT
+    MAX_CONCURRENT_CONTAINERS
+    LOG_LEVEL
+    TZ
+    NANOCLAW_HOST_APPDATA_DIR
+    NANOCLAW_CONTAINER_APPDATA_DIR
+  )
+
+  umask 077
+  : > "${env_file}"
+  for key in "${keys[@]}"; do
+    printf '%s=%s\n' "${key}" "${!key-}" >> "${env_file}"
+  done
+  cp "${env_file}" "${container_env_file}"
+  chown node:node "${env_file}" "${container_env_file}"
+  chmod 600 "${env_file}" "${container_env_file}"
 }
 
-register_telegram_main() {
-  if [[ "${AUTO_SETUP_TELEGRAM:-true}" != "true" ]]; then
+has_credential() {
+  [[ -n "${ANTHROPIC_API_KEY:-}" || -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" || -n "${ANTHROPIC_AUTH_TOKEN:-}" ]]
+}
+
+wait_forever() {
+  local message="$1"
+  touch "${WAITING_MARKER}"
+  rm -f "${SMOKE_MARKER}"
+  log "${message}"
+  exec tail -f /dev/null
+}
+
+start_telegram_pairing_watcher() {
+  if ! truthy "${NANOCLAW_AUTO_PAIR_TELEGRAM:-true}"; then
+    return
+  fi
+  if [[ -f "${TELEGRAM_MARKER}" ]]; then
+    return
+  fi
+  if [[ -z "${TELEGRAM_BOT_TOKEN:-}" ]]; then
     return
   fi
 
-  if [[ -z "${TELEGRAM_CHAT_ID:-}" || -f "${TELEGRAM_MARKER}" ]]; then
-    return
-  fi
-
-  log "Registering Telegram main chat in NanoClaw state..."
-  su -s /bin/bash node -c "cd '${PROJECT_ROOT}' && npm run setup -- --step register -- --jid 'tg:${TELEGRAM_CHAT_ID}' --name '${TELEGRAM_CHAT_NAME:-Telegram Main}' --folder 'telegram_main' --trigger '@${ASSISTANT_NAME:-nanoclaw}' --channel telegram --no-trigger-required --is-main"
-  touch "${TELEGRAM_MARKER}"
+  log "Telegram pairing is enabled. Watch ${PAIRING_LOG} for PAIR_TELEGRAM_CODE and send that code to your Telegram bot."
+  (
+    set -o pipefail
+    sleep "${NANOCLAW_PAIRING_START_DELAY_SECONDS:-8}"
+    mkdir -p "$(dirname "${PAIRING_LOG}")"
+    if run_as_node bash -lc "cd '${RUNTIME_ROOT}' && '${INSTALL_ROOT}/node_modules/.bin/tsx' '${INSTALL_ROOT}/setup/index.ts' --step pair-telegram --intent main" 2>&1 | tee -a "${PAIRING_LOG}"; then
+      touch "${TELEGRAM_MARKER}"
+      chown node:node "${TELEGRAM_MARKER}"
+      log "Telegram pairing completed."
+    else
+      log "Telegram pairing command exited before pairing completed. Check ${PAIRING_LOG}."
+    fi
+  ) &
 }
 
 main() {
-  log "Preparing NanoClaw runtime..."
-  ensure_docker_group_access
-  seed_persistent_layout
+  log "Preparing NanoClaw ${NANOCLAW_AIO_VERSION:-AIO} runtime..."
+  seed_runtime_layout
   write_runtime_env
-  register_telegram_main
-
   touch "${READY_MARKER}"
-  rm -f "${WAITING_MARKER}" "${SMOKE_MARKER}"
+  rm -f "${WAITING_MARKER}" "${SOCKET_FAILURE_MARKER}" "${SMOKE_MARKER}"
 
-  if [[ "${SMOKE_TEST_MODE:-false}" == "true" ]]; then
+  if truthy "${SMOKE_TEST_MODE:-false}"; then
     touch "${SMOKE_MARKER}"
-    log "Smoke test bootstrap complete."
+    log "Smoke mode initialized /appdata and persistent runtime layout."
     exec tail -f /dev/null
   fi
 
-  if [[ -z "${TELEGRAM_BOT_TOKEN:-}" || -z "${TELEGRAM_CHAT_ID:-}" ]]; then
-    touch "${WAITING_MARKER}"
-    log "Waiting for configuration. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID to start NanoClaw."
-    exec tail -f /dev/null
+  if [[ -z "${TELEGRAM_BOT_TOKEN:-}" ]]; then
+    wait_forever "Waiting for configuration. Set TELEGRAM_BOT_TOKEN, then restart the container to begin Telegram pairing."
   fi
 
-  log "Starting NanoClaw Telegram runtime..."
-  exec su -s /bin/bash node -c "cd '${PROJECT_ROOT}' && exec npm start"
+  if ! has_credential; then
+    wait_forever "Waiting for configuration. Set one Claude credential: ANTHROPIC_API_KEY, CLAUDE_CODE_OAUTH_TOKEN, or ANTHROPIC_AUTH_TOKEN."
+  fi
+
+  if ! ensure_docker_group_access; then
+    touch "${SOCKET_FAILURE_MARKER}"
+    wait_forever "Docker socket is required but /var/run/docker.sock is not mounted. Mount it read-write so NanoClaw can spawn nested agent containers."
+  fi
+
+  start_telegram_pairing_watcher
+
+  log "Starting NanoClaw v2 runtime. Nested agents will use ${CONTAINER_IMAGE:-jsonbored/nanoclaw-agent:v2.0.63-agent.1}."
+  exec run_as_node bash -lc "cd '${RUNTIME_ROOT}' && exec node '${INSTALL_ROOT}/dist/index.js'"
 }
 
 main "$@"

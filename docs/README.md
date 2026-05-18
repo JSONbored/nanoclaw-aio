@@ -1,56 +1,60 @@
-# NanoClaw AIO Setup Guide
+# NanoClaw AIO Setup
 
-`nanoclaw-aio` is a Telegram-first packaging of NanoClaw for Unraid.
+`nanoclaw-aio` is a beta Unraid wrapper for NanoClaw v2. It is intentionally Telegram-first and uses a paired helper image for agent execution.
 
 ## Required Inputs
 
-- `ANTHROPIC_API_KEY`
+- `/appdata` mounted to a persistent Unraid path
+- `/var/run/docker.sock` mounted read-write
+- `NANOCLAW_HOST_APPDATA_DIR` matching the host-side appdata path
 - `TELEGRAM_BOT_TOKEN`
-- `TELEGRAM_CHAT_ID`
-- Docker socket mount at `/var/run/docker.sock`
+- one Claude credential:
+  - `ANTHROPIC_API_KEY`
+  - `CLAUDE_CODE_OAUTH_TOKEN`
+  - `ANTHROPIC_AUTH_TOKEN`
 
-Optional:
+## First Boot
 
-- `ASSISTANT_NAME`
-- `TELEGRAM_CHAT_NAME`
-- `CLAUDE_CODE_OAUTH_TOKEN` as an alternative auth mode
-- `ANTHROPIC_BASE_URL` for Anthropic-compatible endpoints
+On first start the container:
 
-## First Boot Behavior
+1. seeds `/appdata/runtime` with the host-visible NanoClaw runtime files needed by nested helper containers
+2. creates persistent `data`, `store`, `groups`, `logs`, `config`, and env paths
+3. writes `.env` and `data/env/env` with `0600` permissions
+4. waits if Telegram or Claude credentials are missing
+5. starts NanoClaw once the Docker socket and required credentials are present
+6. emits a `PAIR_TELEGRAM_CODE` in the logs so you can pair the main Telegram chat
 
-On first start the container will:
-
-1. prepare `/appdata/store`, `/appdata/data`, `/appdata/groups`, and `/appdata/config`
-2. seed default `groups/global` and `groups/main` `CLAUDE.md` files
-3. write the runtime `.env`
-4. auto-register your Telegram main chat if `AUTO_SETUP_TELEGRAM=true`
-5. start NanoClaw
+The pairing code is expected. Send it to your bot from the Telegram chat you want NanoClaw to use.
 
 ## Persistence Model
 
-The NanoClaw code lives inside the image.
+The immutable application build lives in the image at `/opt/nanoclaw`.
 
-Persistent data lives in `/appdata`:
+Persistent and host-visible runtime state lives under `/appdata`:
 
-- `store/` for SQLite data
-- `data/` for runtime state, sessions, and IPC data
-- `groups/` for group memory and CLAUDE.md files
-- `config/` for NanoClaw config files
+- `/appdata/runtime/data`
+- `/appdata/runtime/store`
+- `/appdata/runtime/groups`
+- `/appdata/runtime/logs`
+- `/appdata/runtime/config`
+- `/appdata/runtime/container/agent-runner/src`
+- `/appdata/runtime/container/skills`
 
-This makes image updates much safer than mounting the whole project tree from appdata.
+The last two paths are copied from the image so the host Docker daemon can mount them into `jsonbored/nanoclaw-agent` sibling containers.
 
 ## Security Notes
 
-- Docker socket access is powerful and should be treated as host-level trust.
-- The image does not add `SYS_ADMIN` or run fully privileged.
-- Anthropic credentials stay in the NanoClaw host process and are proxied into agent containers instead of being mounted directly into them.
+The Docker socket is required for NanoClaw v2's current architecture. That mount lets the AIO container control Docker on the host. Treat this as host-level trust and do not install the template unless that is acceptable for your server.
 
-## Smoke Testing
+The template stays beta until the v2 wrapper has enough real-world Unraid runtime confidence.
 
-The local smoke test uses `SMOKE_TEST_MODE=true` to validate:
+## Agent Helper Image
 
-- appdata bootstrap
-- Telegram registration state creation
-- persistence across container restarts
+The AIO image defaults to:
 
-It does not attempt a live Telegram Bot API conversation because that would require real external credentials.
+```text
+CONTAINER_IMAGE=jsonbored/nanoclaw-agent:v2.0.63-agent.1
+CONTAINER_IMAGE_BASE=jsonbored/nanoclaw-agent
+```
+
+Advanced users can override these if they build a custom helper image, but the Community Apps template only installs `nanoclaw-aio`.

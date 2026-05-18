@@ -1,26 +1,46 @@
 # Releases
 
-`nanoclaw-aio` uses upstream-version-plus-AIO-revision releases such as `v1.2.42-aio.1`.
+NanoClaw AIO uses upstream-version-plus-AIO-revision release tags.
 
-## Version format
+## User-Facing Release
 
-- first wrapper release for upstream `v1.2.42`: `v1.2.42-aio.1`
-- second wrapper-only release on the same upstream: `v1.2.42-aio.2`
-- first wrapper release after upgrading upstream: `v1.2.43-aio.1`
+The Unraid app release is tagged from the AIO image:
 
-## Published image tags
+- `v2.0.63-aio.1`
 
-Every `main` build publishes:
+That GitHub Release is the user-facing release history and should be marked latest when published.
+
+## Paired Helper Image
+
+The helper image is released on the same train:
+
+- `jsonbored/nanoclaw-agent:v2.0.63-agent.1`
+
+It is included in the AIO release notes but does not need a separate user-facing GitHub Release unless the fleet release tooling later requires component-specific releases.
+
+## Image Tags
+
+`jsonbored/nanoclaw-aio`:
 
 - `latest`
-- the exact pinned upstream version
-- an explicit packaging line tag like `v1.2.42-aio-v1`
+- `v2.0.63`
+- `v2.0.63-aio.1`
 - `sha-<commit>`
 
-## Release flow
+`jsonbored/nanoclaw-agent`:
 
-1. Trigger **Release / NanoClaw-AIO** from `main` with `action=prepare`.
-2. The workflow computes the next `upstream-aio.N` version and opens a release PR.
-3. Review and merge that PR into `main`.
-4. Trigger **Release / NanoClaw-AIO** from `main` again with `action=publish`.
-5. The workflow reads the merged `CHANGELOG.md` entry, creates the Git tag, and publishes the GitHub Release.
+- `latest`
+- `v2.0.63`
+- `v2.0.63-agent.1`
+- `sha-<commit>`
+
+Both Docker Hub and GHCR should receive the same tag set.
+
+## Upstream Updates
+
+`aio-fleet` monitors stable GitHub Releases from `nanocoai/nanoclaw`. When a newer stable release appears, the fleet monitor should open one PR that updates both:
+
+- root `Dockerfile`
+- `components/nanoclaw-agent/Dockerfile`
+
+Unreleased upstream `main` is only a future signal and should not be shipped as production.
