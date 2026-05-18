@@ -39,6 +39,7 @@ def test_xml_parses_and_uses_v2_public_identity() -> None:
     assert (
         root.findtext("Registry") == "https://hub.docker.com/r/jsonbored/nanoclaw-aio"
     )  # nosec B101
+    assert root.findtext("Project") == "https://github.com/JSONbored/nanoclaw-aio"  # nosec B101
     assert root.findtext("TemplateURL") == (  # nosec B101
         "https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/nanoclaw-aio.xml"
     )
@@ -46,6 +47,19 @@ def test_xml_parses_and_uses_v2_public_identity() -> None:
         "https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/icons/nanoclaw.webp"
     )
     assert root.findtext("Beta") == "True"  # nosec B101
+
+
+def test_xml_uses_current_ca_category_tokens() -> None:
+    category = _xml_root().findtext("Category") or ""
+    tokens = set(category.split())
+
+    assert tokens == {  # nosec B101
+        "AI",
+        "Productivity",
+        "Network:Messenger",
+        "Tools:Utilities",
+    }
+    assert all(not token.endswith(":") for token in tokens)  # nosec B101
 
 
 def test_xml_exposes_required_and_advanced_v2_settings() -> None:
