@@ -20,6 +20,53 @@ def _configs() -> dict[str, ET.Element]:
     }
 
 
+def _expected_v2_targets() -> set[str]:
+    return {
+        "/appdata",
+        "/var/run/docker.sock",
+        "TELEGRAM_BOT_TOKEN",
+        "ANTHROPIC_API_KEY",
+        "NANOCLAW_HOST_APPDATA_DIR",
+        "ANTHROPIC_AUTH_TOKEN",
+        "ANTHROPIC_BASE_URL",
+        "CLAUDE_CODE_OAUTH_TOKEN",
+        "ONECLI_URL",
+        "ONECLI_API_KEY",
+        "CONTAINER_IMAGE",
+        "CONTAINER_IMAGE_BASE",
+        "CONTAINER_TIMEOUT",
+        "IDLE_TIMEOUT",
+        "CONTAINER_MAX_OUTPUT_SIZE",
+        "MAX_MESSAGES_PER_PROMPT",
+        "MAX_CONCURRENT_CONTAINERS",
+        "LOG_LEVEL",
+        "ASSISTANT_NAME",
+        "ASSISTANT_HAS_OWN_NUMBER",
+        "TZ",
+    }
+
+
+def _aio_fleet_required_targets() -> set[str]:
+    targets: set[str] = set()
+    in_required_targets = False
+    required_targets_indent = -1
+
+    for line in _read(".aio-fleet.yml").splitlines():
+        stripped = line.strip()
+        indent = len(line) - len(line.lstrip())
+        if stripped == "required_targets:":
+            in_required_targets = True
+            required_targets_indent = indent
+            continue
+        if in_required_targets and stripped and indent <= required_targets_indent:
+            break
+        if in_required_targets and stripped.startswith("- "):
+            targets.add(stripped[2:].strip().strip('"\''))
+
+    assert targets, ".aio-fleet.yml missing validation.required_targets"  # nosec B101
+    return targets
+
+
 def _read(path: str) -> str:
     return (REPO_ROOT / path).read_text()
 
@@ -64,29 +111,7 @@ def test_xml_uses_current_ca_category_tokens() -> None:
 
 def test_xml_exposes_required_and_advanced_v2_settings() -> None:
     configs = _configs()
-    required_targets = {
-        "/appdata",
-        "/var/run/docker.sock",
-        "TELEGRAM_BOT_TOKEN",
-        "ANTHROPIC_API_KEY",
-        "NANOCLAW_HOST_APPDATA_DIR",
-        "ANTHROPIC_AUTH_TOKEN",
-        "ANTHROPIC_BASE_URL",
-        "CLAUDE_CODE_OAUTH_TOKEN",
-        "ONECLI_URL",
-        "ONECLI_API_KEY",
-        "CONTAINER_IMAGE",
-        "CONTAINER_IMAGE_BASE",
-        "CONTAINER_TIMEOUT",
-        "IDLE_TIMEOUT",
-        "CONTAINER_MAX_OUTPUT_SIZE",
-        "MAX_MESSAGES_PER_PROMPT",
-        "MAX_CONCURRENT_CONTAINERS",
-        "LOG_LEVEL",
-        "ASSISTANT_NAME",
-        "ASSISTANT_HAS_OWN_NUMBER",
-        "TZ",
-    }
+    required_targets = _expected_v2_targets()
 
     assert required_targets <= set(configs)  # nosec B101
     assert configs["CONTAINER_IMAGE"].attrib["Default"] == (  # nosec B101
@@ -97,6 +122,19 @@ def test_xml_exposes_required_and_advanced_v2_settings() -> None:
     )
     assert configs["TELEGRAM_BOT_TOKEN"].attrib["Display"] == "always"  # nosec B101
     assert configs["/var/run/docker.sock"].attrib["Mode"] == "rw"  # nosec B101
+
+
+def test_app_fleet_required_targets_match_v2_xml_surface() -> None:
+    configs = _configs()
+    app_fleet_targets = _aio_fleet_required_targets()
+    required_xml_targets = {
+        target
+        for target, config in configs.items()
+        if config.attrib.get("Required") == "true"
+    }
+
+    assert _expected_v2_targets() <= app_fleet_targets  # nosec B101
+    assert required_xml_targets <= app_fleet_targets  # nosec B101
 
 
 def test_xml_overview_warns_about_beta_docker_socket_and_pairing() -> None:
