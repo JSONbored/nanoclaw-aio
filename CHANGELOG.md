@@ -25,3 +25,4 @@ All notable changes to this project will be documented in this file.
 
 - This release replaces the old `nanocoai/nanoclaw-telegram` `v1.2.x` wrapper model. Existing v1 users should treat v2 as a migration, not an in-place compatible runtime.
 - The user-facing GitHub Release is `v2.0.63-aio.1`; the paired helper image tag is `v2.0.63-agent.1`.
+- The release gate cleanup normalized formatting and lint metadata only; it does not change the package revision or runtime defaults.
