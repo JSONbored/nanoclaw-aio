@@ -10,7 +10,7 @@ ARG AIO_REVISION=1
 ARG PNPM_VERSION=10.33.0
 ARG TELEGRAM_ADAPTER_VERSION=4.26.0
 
-FROM node:22-slim@sha256:689c11043dad91472750cd824c97dd5e2318e9dd6f954e492fe7af0135d33ceb AS build
+FROM node:24-slim@sha256:24dc26ef1e3c3690f27ebc4136c9c186c3133b25563ae4d7f0692e4d1fe5db0e AS build
 
 ARG UPSTREAM_COMMIT
 ARG CHANNELS_COMMIT
@@ -58,7 +58,7 @@ RUN git apply /tmp/unraid-host-paths.patch && \
     pnpm run build && \
     rm -rf .git /tmp/unraid-host-paths.patch ~/.local/share/pnpm/store
 
-FROM node:22-slim@sha256:689c11043dad91472750cd824c97dd5e2318e9dd6f954e492fe7af0135d33ceb
+FROM node:24-slim@sha256:24dc26ef1e3c3690f27ebc4136c9c186c3133b25563ae4d7f0692e4d1fe5db0e
 
 ARG UPSTREAM_VERSION
 ARG UPSTREAM_COMMIT
