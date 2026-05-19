@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - Move the Docker socket mount behind Advanced View and mark it optional in the Unraid template while keeping the security warning explicit.
 - Update the default helper image reference to `jsonbored/nanoclaw-agent:v2.0.64-agent.1`.
+- Align the XML release notes and setup copy with the optional advanced Docker socket policy.
 
 ## v2.0.64-aio.1 - 2026-05-19
 
