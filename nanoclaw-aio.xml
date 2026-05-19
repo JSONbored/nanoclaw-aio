@@ -28,24 +28,19 @@
 &#xD;
 [b]Important Notes[/b]&#xD;
 - This template is marked beta while the NanoClaw v2 runtime gets more real-world Unraid soak time.&#xD;
-- The Docker socket mount is required and grants host-level Docker control to this container. Install only if you are comfortable trusting NanoClaw and this wrapper with that access.&#xD;
+- The Docker socket mount is optional and kept in Advanced View. Enable it only if you want NanoClaw to launch paired helper containers and you are comfortable granting host-level Docker control.&#xD;
 - Persistent databases, logs, groups, env files, and channel state live under [code]/appdata[/code].</Overview>
   <Changes>### 2026-05-19&#xD;
 - Generated from CHANGELOG.md during release preparation. Do not edit manually.&#xD;
-- Update non-major infrastructure updates&#xD;
-- Update node.js to v24&#xD;
-- Normalize nanoclaw ca description&#xD;
-- Modernize nanoclaw aio docs&#xD;
-- Normalize nanoclaw ca metadata&#xD;
-- Align nanoclaw fleet target metadata&#xD;
-- Update upstream pins for nanoclaw-aio&#xD;
-- Format template policy assertions</Changes>
+- Move the Docker socket mount behind Advanced View and mark it optional in the Unraid template while keeping the security warning explicit.&#xD;
+- Update the default helper image reference to [code]jsonbored/nanoclaw-agent:v2.0.64-agent.1[/code].&#xD;
+- Align the XML release notes and setup copy with the optional advanced Docker socket policy.</Changes>
   <Category>AI Productivity Network:Messenger Tools:Utilities</Category>
   <Icon>https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/icons/nanoclaw.webp</Icon>
   <TemplateURL>https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/nanoclaw-aio.xml</TemplateURL>
   <Beta>True</Beta>
   <ExtraSearchTerms>telegram, claude, agents, automation, scheduler, docker, assistant, nanoclaw</ExtraSearchTerms>
-  <Requires>NanoClaw requires a Telegram bot token, at least one Claude credential, and the Docker socket mount. Mounting [code]/var/run/docker.sock[/code] grants host-level Docker control because NanoClaw launches paired [code]jsonbored/nanoclaw-agent[/code] helper containers for agent work.</Requires>
+  <Requires>NanoClaw requires a Telegram bot token and at least one Claude credential. The optional Docker socket mount is needed for nested [code]jsonbored/nanoclaw-agent[/code] helper containers and grants host-level Docker control when enabled.</Requires>
   <ExtraParams/>
   <PostArgs/>
   <CPUset/>
