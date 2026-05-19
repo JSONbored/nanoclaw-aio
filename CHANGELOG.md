@@ -1,29 +1,38 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+
+## v2.0.64-aio.2 - 2026-05-19
+
+### Fixes
+
+- Move the Docker socket mount behind Advanced View and mark it optional in the Unraid template while keeping the security warning explicit.
+- Update the default helper image reference to `jsonbored/nanoclaw-agent:v2.0.64-agent.1`.
+
 ## v2.0.64-aio.1 - 2026-05-19
+
 ### Dependency Updates
+
 - Update non-major infrastructure updates
 - Update node.js to v24
 
-
 ### Documentation
+
 - Normalize nanoclaw ca description
 - Modernize nanoclaw aio docs
 
-
 ### Fixes
+
 - Normalize nanoclaw ca metadata
 - Align nanoclaw fleet target metadata
 
-
 ### Maintenance
+
 - Update upstream pins for nanoclaw-aio
 
-
 ### Tests
-- Format template policy assertions
 
+- Format template policy assertions
 
 ## v2.0.63-aio.1 - 2026-05-18
 

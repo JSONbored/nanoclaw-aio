@@ -11,12 +11,13 @@ release:
   name: NanoClaw-AIO
   profile: multi-component
   previous_tag_command: latest-aio-tag
-runtime:
-  supervisor: tini
 upstream:
   name: NanoClaw
   version_key: UPSTREAM_VERSION
-  commit_key: UPSTREAM_COMMIT
+  digest_arg: UPSTREAM_IMAGE_DIGEST
+  commit_paths:
+    - Dockerfile
+    - components/nanoclaw-agent/Dockerfile
   components:
     - nanoclaw-aio
     - nanoclaw-agent
@@ -40,8 +41,6 @@ upstream:
       strategy: pr
       release_notes_url: https://github.com/nanocoai/nanoclaw/releases
 template:
-  xml_paths:
-    - nanoclaw-aio.xml
   generated: false
 catalog:
   published: true
@@ -52,6 +51,36 @@ tests:
   unit: tests/template
   integration: tests/integration -m integration
   checkout_submodules: false
+validation:
+  required_targets:
+    - /appdata
+    - /var/run/docker.sock
+    - TELEGRAM_BOT_TOKEN
+    - ANTHROPIC_API_KEY
+    - CLAUDE_CODE_OAUTH_TOKEN
+    - ANTHROPIC_AUTH_TOKEN
+    - ANTHROPIC_BASE_URL
+    - ONECLI_URL
+    - ONECLI_API_KEY
+    - CONTAINER_IMAGE
+    - CONTAINER_IMAGE_BASE
+    - CONTAINER_TIMEOUT
+    - IDLE_TIMEOUT
+    - CONTAINER_MAX_OUTPUT_SIZE
+    - MAX_MESSAGES_PER_PROMPT
+    - MAX_CONCURRENT_CONTAINERS
+    - LOG_LEVEL
+    - ASSISTANT_NAME
+    - ASSISTANT_HAS_OWN_NUMBER
+    - NANOCLAW_HOST_APPDATA_DIR
+    - TZ
+  required_text_fields:
+    - ReadMe
+  exact_category_tokens:
+    - AI
+    - Productivity
+    - Network:Messenger
+    - Tools:Utilities
 components:
   aio:
     image_name: jsonbored/nanoclaw-aio
@@ -78,27 +107,3 @@ components:
     floating_tags:
       - latest
     upstream_version_key: UPSTREAM_VERSION
-validation:
-  docker_socket_required: true
-  required_targets:
-    - /appdata
-    - /var/run/docker.sock
-    - TELEGRAM_BOT_TOKEN
-    - ANTHROPIC_API_KEY
-    - CLAUDE_CODE_OAUTH_TOKEN
-    - ANTHROPIC_AUTH_TOKEN
-    - ANTHROPIC_BASE_URL
-    - ONECLI_URL
-    - ONECLI_API_KEY
-    - CONTAINER_IMAGE
-    - CONTAINER_IMAGE_BASE
-    - CONTAINER_TIMEOUT
-    - IDLE_TIMEOUT
-    - CONTAINER_MAX_OUTPUT_SIZE
-    - MAX_MESSAGES_PER_PROMPT
-    - MAX_CONCURRENT_CONTAINERS
-    - LOG_LEVEL
-    - ASSISTANT_NAME
-    - ASSISTANT_HAS_OWN_NUMBER
-    - NANOCLAW_HOST_APPDATA_DIR
-    - TZ

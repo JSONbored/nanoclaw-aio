@@ -123,13 +123,15 @@ def test_xml_exposes_required_and_advanced_v2_settings() -> None:
 
     assert required_targets <= set(configs)  # nosec B101
     assert configs["CONTAINER_IMAGE"].attrib["Default"] == (  # nosec B101
-        "jsonbored/nanoclaw-agent:v2.0.63-agent.1"
+        "jsonbored/nanoclaw-agent:v2.0.64-agent.1"
     )
     assert configs["CONTAINER_IMAGE_BASE"].attrib["Default"] == (  # nosec B101
         "jsonbored/nanoclaw-agent"
     )
     assert configs["TELEGRAM_BOT_TOKEN"].attrib["Display"] == "always"  # nosec B101
     assert configs["/var/run/docker.sock"].attrib["Mode"] == "rw"  # nosec B101
+    assert configs["/var/run/docker.sock"].attrib["Display"] == "advanced"  # nosec B101
+    assert configs["/var/run/docker.sock"].attrib["Required"] == "false"  # nosec B101
 
 
 def test_app_fleet_required_targets_match_v2_xml_surface() -> None:
@@ -176,17 +178,17 @@ def test_xml_overview_uses_fleet_ca_description_format() -> None:
 
 
 def test_dockerfiles_pin_upstream_and_component_versions() -> None:
-    assert _arg_value("Dockerfile", "UPSTREAM_VERSION") == "v2.0.63"  # nosec B101
+    assert _arg_value("Dockerfile", "UPSTREAM_VERSION") == "v2.0.64"  # nosec B101
     assert _arg_value("Dockerfile", "UPSTREAM_COMMIT") == (  # nosec B101
         "975a2f0f5b0ea19bbf35fadfd394df35e5341d3a"
     )
     assert _arg_value("Dockerfile", "CHANNELS_COMMIT") == (  # nosec B101
         "8e91d37bc9c14b06580bda4b46c85f33cf755b15"
     )
-    assert _arg_value("Dockerfile", "AIO_REVISION") == "1"  # nosec B101
+    assert _arg_value("Dockerfile", "AIO_REVISION") == "2"  # nosec B101
     assert (  # nosec B101
         _arg_value("components/nanoclaw-agent/Dockerfile", "UPSTREAM_VERSION")
-        == "v2.0.63"
+        == "v2.0.64"
     )
     assert (  # nosec B101
         _arg_value("components/nanoclaw-agent/Dockerfile", "AGENT_REVISION") == "1"
