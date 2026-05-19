@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.0.64-aio.3 - 2026-05-19
+
+### Fixes
+
+- Use ca-compatible nanoclaw icon
+
 ## v2.0.64-aio.2 - 2026-05-19
 
 ### Fixes
