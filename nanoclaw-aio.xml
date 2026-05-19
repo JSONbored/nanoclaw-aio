@@ -36,7 +36,7 @@
 - Update the default helper image reference to [code]jsonbored/nanoclaw-agent:v2.0.64-agent.1[/code].&#xD;
 - Align the XML release notes and setup copy with the optional advanced Docker socket policy.</Changes>
   <Category>AI Productivity Network:Messenger Tools:Utilities</Category>
-  <Icon>https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/icons/nanoclaw.webp</Icon>
+  <Icon>https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/icons/nanoclaw.png</Icon>
   <TemplateURL>https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/nanoclaw-aio.xml</TemplateURL>
   <Beta>True</Beta>
   <ExtraSearchTerms>telegram, claude, agents, automation, scheduler, docker, assistant, nanoclaw</ExtraSearchTerms>
