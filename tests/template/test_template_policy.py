@@ -93,7 +93,7 @@ def test_xml_parses_and_uses_v2_public_identity() -> None:
         "https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/nanoclaw-aio.xml"
     )
     assert root.findtext("Icon") == (  # nosec B101
-        "https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/icons/nanoclaw.webp"
+        "https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/icons/nanoclaw.png"
     )
     assert root.findtext("Beta") == "True"  # nosec B101
     assert root.find("MyIP") is not None  # nosec B101
