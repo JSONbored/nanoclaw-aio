@@ -17,7 +17,7 @@ RUN git clone https://github.com/nanocoai/nanoclaw.git . && \
     git checkout "${UPSTREAM_COMMIT}" && \
     rm -rf .git
 
-FROM node:22-slim@sha256:689c11043dad91472750cd824c97dd5e2318e9dd6f954e492fe7af0135d33ceb
+FROM node:24-slim@sha256:24dc26ef1e3c3690f27ebc4136c9c186c3133b25563ae4d7f0692e4d1fe5db0e
 
 ARG UPSTREAM_VERSION
 ARG UPSTREAM_COMMIT
