@@ -30,11 +30,16 @@
 - This template is marked beta while the NanoClaw v2 runtime gets more real-world Unraid soak time.&#xD;
 - The Docker socket mount is required and grants host-level Docker control to this container. Install only if you are comfortable trusting NanoClaw and this wrapper with that access.&#xD;
 - Persistent databases, logs, groups, env files, and channel state live under [code]/appdata[/code].</Overview>
-  <Changes>### 2026-05-18&#xD;
+  <Changes>### 2026-05-19&#xD;
 - Generated from CHANGELOG.md during release preparation. Do not edit manually.&#xD;
-- Rebuild NanoClaw AIO around upstream v2.0.63.&#xD;
-- Add paired jsonbored/nanoclaw-agent:v2.0.63-agent.1 helper image.&#xD;
-- Replace runtime git-fetch behavior with build-time Telegram adapter vendoring.</Changes>
+- Update non-major infrastructure updates&#xD;
+- Update node.js to v24&#xD;
+- Normalize nanoclaw ca description&#xD;
+- Modernize nanoclaw aio docs&#xD;
+- Normalize nanoclaw ca metadata&#xD;
+- Align nanoclaw fleet target metadata&#xD;
+- Update upstream pins for nanoclaw-aio&#xD;
+- Format template policy assertions</Changes>
   <Category>AI Productivity Network:Messenger Tools:Utilities</Category>
   <Icon>https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/icons/nanoclaw.webp</Icon>
   <TemplateURL>https://raw.githubusercontent.com/JSONbored/awesome-unraid/main/nanoclaw-aio.xml</TemplateURL>
