@@ -3,7 +3,7 @@
 # checkov:skip=CKV_DOCKER_3: NanoClaw's upstream agent image runs as node after root installs browser and CLI dependencies.
 # checkov:skip=CKV_DOCKER_7: NanoClaw is pinned by release tag and commit SHA because the helper image is built from upstream source.
 
-ARG UPSTREAM_VERSION=v2.0.63
+ARG UPSTREAM_VERSION=v2.0.64
 ARG UPSTREAM_COMMIT=975a2f0f5b0ea19bbf35fadfd394df35e5341d3a
 ARG AGENT_REVISION=1
 
