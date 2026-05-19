@@ -9,7 +9,7 @@ from tests.helpers import DockerRuntime, docker_available, ensure_image, temp_di
 pytestmark = pytest.mark.integration
 
 AIO_IMAGE = "nanoclaw-aio:pytest"
-AGENT_IMAGE = "jsonbored/nanoclaw-agent:v2.0.63-agent.1"
+AGENT_IMAGE = "jsonbored/nanoclaw-agent:v2.0.64-agent.1"
 
 
 @pytest.fixture(scope="session")
@@ -55,9 +55,7 @@ def test_smoke_mode_initializes_appdata_and_survives_restart(
             )  # nosec B101
 
             env_file = container.read_file("/appdata/runtime/data/env/env")
-            assert (
-                "CONTAINER_IMAGE=jsonbored/nanoclaw-agent:v2.0.63-agent.1" in env_file
-            )  # nosec B101
+            assert f"CONTAINER_IMAGE={AGENT_IMAGE}" in env_file  # nosec B101
             assert f"NANOCLAW_HOST_APPDATA_DIR={appdata}" in env_file  # nosec B101
 
             container.restart()
