@@ -31,7 +31,7 @@ index 7201bfc..6ee7406 100644
      throw new Error('No packages to install. Use install_packages first.');
    }
  
-+  const shellQuote = (value: string): string => `'${value.replace(/'/g, `'\''`)}'`;
++  const shellQuote = (value: string): string => `'${value.replace(/'/g, "'\\''")}'`;
    let dockerfile = `FROM ${CONTAINER_IMAGE}\nUSER root\n`;
    if (aptPackages.length > 0) {
 -    dockerfile += `RUN apt-get update && apt-get install -y ${aptPackages.join(' ')} && rm -rf /var/lib/apt/lists/*\n`;
@@ -56,7 +56,7 @@ index 7201bfc..6ee7406 100644
    fs.writeFileSync(tmpDockerfile, dockerfile);
    try {
 -    execSync(`${CONTAINER_RUNTIME_BIN} build -t ${imageTag} -f ${tmpDockerfile} .`, {
-+    const shellQuote = (value: string): string => `'${value.replace(/'/g, `'\''`)}'`;
++    const shellQuote = (value: string): string => `'${value.replace(/'/g, "'\\''")}'`;
 +    const dockerfileForHost = hostMountPath(tmpDockerfile);
 +    const buildContextForHost = hostMountPath(DATA_DIR);
 +    execSync(`${CONTAINER_RUNTIME_BIN} build -t ${shellQuote(imageTag)} -f ${shellQuote(dockerfileForHost)} ${shellQuote(buildContextForHost)}`, {
