@@ -1,0 +1,17 @@
+[upstream]
+name = "NanoClaw"
+type = "github-releases"
+repo = "nanocoai/nanoclaw"
+version_source = "dockerfile-arg"
+version_key = "UPSTREAM_VERSION"
+commit_key = "UPSTREAM_COMMIT"
+strategy = "pr"
+stable_only = true
+
+[channels]
+repo = "nanocoai/nanoclaw"
+ref = "channels"
+commit_key = "CHANNELS_COMMIT"
+
+[notifications]
+release_notes_url = "https://github.com/nanocoai/nanoclaw/releases"
