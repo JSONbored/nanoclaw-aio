@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.0.64-aio.4 - 2026-05-20
+
+### Fixes
+
+- Realign pinned upstream version metadata
+
+- Restore missing upstream fleet config
+
+- Correct shell quoting in Unraid host paths patch
+
+- Require always-visible Docker socket mount
+
+### Maintenance
+
+- Remove centralized repo files
+
 ## v2.0.64-aio.3 - 2026-05-19
 
 ### Fixes
