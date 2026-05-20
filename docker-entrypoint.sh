@@ -194,7 +194,7 @@ main() {
 
 	start_telegram_pairing_watcher
 
-	log "Starting NanoClaw v2 runtime. Nested agents will use ${CONTAINER_IMAGE:-jsonbored/nanoclaw-agent:v2.0.63-agent.1}."
+	log "Starting NanoClaw v2 runtime. Nested agents will use ${CONTAINER_IMAGE:-jsonbored/nanoclaw-agent:v2.0.64-agent.2}."
 	exec run_as_node bash -lc "cd '${RUNTIME_ROOT}' && exec node '${INSTALL_ROOT}/dist/index.js'"
 }
 

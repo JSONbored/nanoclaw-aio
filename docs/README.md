@@ -53,7 +53,7 @@ The template stays beta until the v2 wrapper has enough real-world Unraid runtim
 The AIO image defaults to:
 
 ```text
-CONTAINER_IMAGE=jsonbored/nanoclaw-agent:v2.0.63-agent.1
+CONTAINER_IMAGE=jsonbored/nanoclaw-agent:v2.0.64-agent.2
 CONTAINER_IMAGE_BASE=jsonbored/nanoclaw-agent
 ```
 

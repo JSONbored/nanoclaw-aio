@@ -4,9 +4,9 @@
 # checkov:skip=CKV_DOCKER_7: NanoClaw is pinned by tag and commit SHA because upstream does not publish a Docker image for this AIO runtime.
 
 ARG UPSTREAM_VERSION=v2.0.64
-ARG UPSTREAM_COMMIT=975a2f0f5b0ea19bbf35fadfd394df35e5341d3a
-ARG CHANNELS_COMMIT=8e91d37bc9c14b06580bda4b46c85f33cf755b15
-ARG AIO_REVISION=2
+ARG UPSTREAM_COMMIT=0683c6ec589ec0df74c2a3d99f9544127317b490
+ARG CHANNELS_COMMIT=36fb78092c27737a2313c07244748a98b26c7d03
+ARG AIO_REVISION=4
 ARG PNPM_VERSION=10.33.0
 ARG TELEGRAM_ADAPTER_VERSION=4.26.0
 
@@ -32,7 +32,7 @@ WORKDIR /opt/nanoclaw
 
 RUN git clone https://github.com/nanocoai/nanoclaw.git . && \
     git checkout "${UPSTREAM_COMMIT}" && \
-    git clone --depth 1 --branch channels https://github.com/nanocoai/nanoclaw.git /tmp/nanoclaw-channels && \
+    git clone --branch channels https://github.com/nanocoai/nanoclaw.git /tmp/nanoclaw-channels && \
     git -C /tmp/nanoclaw-channels checkout "${CHANNELS_COMMIT}" && \
     for file in \
       src/channels/telegram.ts \
@@ -92,7 +92,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 ENV NANOCLAW_AIO_VERSION="${UPSTREAM_VERSION}-aio.${AIO_REVISION}" \
     NANOCLAW_UPSTREAM_VERSION="${UPSTREAM_VERSION}" \
     NANOCLAW_CHANNELS_COMMIT="${CHANNELS_COMMIT}" \
-    CONTAINER_IMAGE="jsonbored/nanoclaw-agent:${UPSTREAM_VERSION}-agent.1" \
+    CONTAINER_IMAGE="jsonbored/nanoclaw-agent:${UPSTREAM_VERSION}-agent.2" \
     CONTAINER_IMAGE_BASE="jsonbored/nanoclaw-agent" \
     NANOCLAW_CONTAINER_APPDATA_DIR="/appdata" \
     NANOCLAW_HOST_APPDATA_DIR="/mnt/user/appdata/nanoclaw-aio" \

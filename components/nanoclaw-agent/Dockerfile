@@ -4,8 +4,8 @@
 # checkov:skip=CKV_DOCKER_7: NanoClaw is pinned by release tag and commit SHA because the helper image is built from upstream source.
 
 ARG UPSTREAM_VERSION=v2.0.64
-ARG UPSTREAM_COMMIT=975a2f0f5b0ea19bbf35fadfd394df35e5341d3a
-ARG AGENT_REVISION=1
+ARG UPSTREAM_COMMIT=0683c6ec589ec0df74c2a3d99f9544127317b490
+ARG AGENT_REVISION=2
 
 FROM alpine/git:v2.52.0@sha256:d453f54c83320412aa89c391b076930bd8569bc1012285e8c68ce2d4435826a3 AS source
 

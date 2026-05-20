@@ -123,7 +123,7 @@ def test_xml_exposes_required_and_advanced_v2_settings() -> None:
 
     assert required_targets <= set(configs)  # nosec B101
     assert configs["CONTAINER_IMAGE"].attrib["Default"] == (  # nosec B101
-        "jsonbored/nanoclaw-agent:v2.0.64-agent.1"
+        "jsonbored/nanoclaw-agent:v2.0.64-agent.2"
     )
     assert configs["CONTAINER_IMAGE_BASE"].attrib["Default"] == (  # nosec B101
         "jsonbored/nanoclaw-agent"
@@ -180,18 +180,18 @@ def test_xml_overview_uses_fleet_ca_description_format() -> None:
 def test_dockerfiles_pin_upstream_and_component_versions() -> None:
     assert _arg_value("Dockerfile", "UPSTREAM_VERSION") == "v2.0.64"  # nosec B101
     assert _arg_value("Dockerfile", "UPSTREAM_COMMIT") == (  # nosec B101
-        "975a2f0f5b0ea19bbf35fadfd394df35e5341d3a"
+        "0683c6ec589ec0df74c2a3d99f9544127317b490"
     )
     assert _arg_value("Dockerfile", "CHANNELS_COMMIT") == (  # nosec B101
-        "8e91d37bc9c14b06580bda4b46c85f33cf755b15"
+        "36fb78092c27737a2313c07244748a98b26c7d03"
     )
-    assert _arg_value("Dockerfile", "AIO_REVISION") == "2"  # nosec B101
+    assert _arg_value("Dockerfile", "AIO_REVISION") == "4"  # nosec B101
     assert (  # nosec B101
         _arg_value("components/nanoclaw-agent/Dockerfile", "UPSTREAM_VERSION")
         == "v2.0.64"
     )
     assert (  # nosec B101
-        _arg_value("components/nanoclaw-agent/Dockerfile", "AGENT_REVISION") == "1"
+        _arg_value("components/nanoclaw-agent/Dockerfile", "AGENT_REVISION") == "2"
     )
     assert "CLAUDE_CODE_VERSION=2.1.128" in _read(
         "components/nanoclaw-agent/Dockerfile"
@@ -208,7 +208,7 @@ def test_aio_defaults_point_to_paired_agent_image() -> None:
     dockerfile = _read("Dockerfile")
 
     assert (
-        'CONTAINER_IMAGE="jsonbored/nanoclaw-agent:${UPSTREAM_VERSION}-agent.1"'
+        'CONTAINER_IMAGE="jsonbored/nanoclaw-agent:${UPSTREAM_VERSION}-agent.2"'
         in dockerfile
     )  # nosec B101
     assert 'CONTAINER_IMAGE_BASE="jsonbored/nanoclaw-agent"' in dockerfile  # nosec B101
