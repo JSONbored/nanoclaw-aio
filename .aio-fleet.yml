@@ -52,6 +52,7 @@ tests:
   integration: tests/integration -m integration
   checkout_submodules: false
 validation:
+  docker_socket_required: true
   required_targets:
     - /appdata
     - /var/run/docker.sock
