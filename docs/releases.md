@@ -6,7 +6,7 @@ NanoClaw AIO uses upstream-version-plus-AIO-revision release tags.
 
 The Unraid app release is tagged from the AIO image:
 
-- `v2.0.63-aio.1`
+- `v2.0.64-aio.4`
 
 That GitHub Release is the user-facing release history and should be marked latest when published.
 
@@ -14,7 +14,7 @@ That GitHub Release is the user-facing release history and should be marked late
 
 The helper image is released on the same train:
 
-- `jsonbored/nanoclaw-agent:v2.0.63-agent.1`
+- `jsonbored/nanoclaw-agent:v2.0.64-agent.2`
 
 It is included in the AIO release notes but does not need a separate user-facing GitHub Release unless the fleet release tooling later requires component-specific releases.
 
@@ -23,15 +23,15 @@ It is included in the AIO release notes but does not need a separate user-facing
 `jsonbored/nanoclaw-aio`:
 
 - `latest`
-- `v2.0.63`
-- `v2.0.63-aio.1`
+- `v2.0.64`
+- `v2.0.64-aio.4`
 - `sha-<commit>`
 
 `jsonbored/nanoclaw-agent`:
 
 - `latest`
-- `v2.0.63`
-- `v2.0.63-agent.1`
+- `v2.0.64`
+- `v2.0.64-agent.2`
 - `sha-<commit>`
 
 Both Docker Hub and GHCR should receive the same tag set.

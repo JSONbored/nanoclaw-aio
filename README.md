@@ -15,11 +15,11 @@ sandbox/helper image used by `nanoclaw-aio`.
 ## Current Release
 
 - Upstream NanoClaw:
-  [`nanocoai/nanoclaw` `v2.0.63`](https://github.com/nanocoai/nanoclaw/releases/tag/v2.0.63)
-- Upstream commit: `975a2f0f5b0ea19bbf35fadfd394df35e5341d3a`
-- Channels branch commit: `8e91d37bc9c14b06580bda4b46c85f33cf755b15`
-- AIO image tag: `v2.0.63-aio.1`
-- Agent helper image tag: `v2.0.63-agent.1`
+  [`nanocoai/nanoclaw` `v2.0.64`](https://github.com/nanocoai/nanoclaw/releases/tag/v2.0.64)
+- Upstream commit: `0683c6ec589ec0df74c2a3d99f9544127317b490`
+- Channels branch commit: `36fb78092c27737a2313c07244748a98b26c7d03`
+- AIO image tag: `v2.0.64-aio.4`
+- Agent helper image tag: `v2.0.64-agent.2`
 
 NanoClaw `main` may move ahead of the latest release. This package tracks stable
 upstream releases, not unreleased `main`.
@@ -70,7 +70,7 @@ required for first boot:
 The default helper image is:
 
 ```text
-CONTAINER_IMAGE=jsonbored/nanoclaw-agent:v2.0.63-agent.1
+CONTAINER_IMAGE=jsonbored/nanoclaw-agent:v2.0.64-agent.2
 CONTAINER_IMAGE_BASE=jsonbored/nanoclaw-agent
 ```
 
@@ -106,15 +106,15 @@ version, while the helper image ships on the same release train.
 `jsonbored/nanoclaw-aio` and `ghcr.io/jsonbored/nanoclaw-aio` publish:
 
 - `latest`
-- `v2.0.63`
-- `v2.0.63-aio.1`
+- `v2.0.64`
+- `v2.0.64-aio.4`
 - `sha-<commit>`
 
 `jsonbored/nanoclaw-agent` and `ghcr.io/jsonbored/nanoclaw-agent` publish:
 
 - `latest`
-- `v2.0.63`
-- `v2.0.63-agent.1`
+- `v2.0.64`
+- `v2.0.64-agent.2`
 - `sha-<commit>`
 
 See [`docs/releases.md`](docs/releases.md) for the release model.
