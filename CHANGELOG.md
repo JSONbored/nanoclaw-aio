@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.0.64-aio.5 - 2026-05-21
+
+### Fixes
+
+- Gate Docker socket as advanced opt-in
+
+- Require explicit Docker socket opt-in
+
 ## v2.0.64-aio.4 - 2026-05-20
 
 ### Fixes
