@@ -132,6 +132,8 @@ def test_xml_exposes_required_and_advanced_v2_settings() -> None:
     assert configs["/var/run/docker.sock"].attrib["Mode"] == "rw"  # nosec B101
     assert configs["/var/run/docker.sock"].attrib["Display"] == "advanced"  # nosec B101
     assert configs["/var/run/docker.sock"].attrib["Required"] == "false"  # nosec B101
+    assert configs["/var/run/docker.sock"].attrib["Default"] == ""  # nosec B101
+    assert configs["/var/run/docker.sock"].text in (None, "")  # nosec B101
 
 
 def test_app_fleet_required_targets_match_v2_xml_surface() -> None:
