@@ -102,6 +102,9 @@ def test_xml_parses_and_uses_v2_public_identity() -> None:
     assert root.find("CPUset") is not None  # nosec B101
     assert root.find("DateInstalled") is not None  # nosec B101
     assert root.find("Description") is not None  # nosec B101
+    assert (
+        root.findtext("ReadMe") == "https://github.com/JSONbored/nanoclaw-aio#readme"
+    )  # nosec B101
 
 
 def test_xml_uses_current_ca_category_tokens() -> None:
