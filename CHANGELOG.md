@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.0.64-aio.6 - 2026-05-26
+
+### Documentation
+
+- Use URL readme metadata
+
 ## v2.0.64-aio.5 - 2026-05-21
 
 ### Fixes
