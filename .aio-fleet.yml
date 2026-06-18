@@ -28,6 +28,7 @@ upstream:
       repo: nanocoai/nanoclaw
       dockerfile: Dockerfile
       version_key: UPSTREAM_VERSION
+      commit_key: UPSTREAM_COMMIT
       stable_only: true
       strategy: pr
       release_notes_url: https://github.com/nanocoai/nanoclaw/releases
@@ -37,6 +38,7 @@ upstream:
       repo: nanocoai/nanoclaw
       dockerfile: components/nanoclaw-agent/Dockerfile
       version_key: UPSTREAM_VERSION
+      commit_key: UPSTREAM_COMMIT
       stable_only: true
       strategy: pr
       release_notes_url: https://github.com/nanocoai/nanoclaw/releases
