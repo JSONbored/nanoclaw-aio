@@ -1,11 +1,11 @@
 diff --git a/src/container-runner.ts b/src/container-runner.ts
-index 7201bfc..6ee7406 100644
+index 8482a9e..f8d010a 100644
 --- a/src/container-runner.ts
 +++ b/src/container-runner.ts
 @@ -22,7 +22,14 @@ import {
  import { materializeContainerJson } from './container-config.js';
  import { getContainerConfig } from './db/container-configs.js';
- import { updateContainerConfigScalars, updateContainerConfigJson } from './db/container-configs.js';
+ import { updateContainerConfigScalars } from './db/container-configs.js';
 -import { CONTAINER_RUNTIME_BIN, hostGatewayArgs, readonlyMountArgs, stopContainer } from './container-runtime.js';
 +import {
 +  CONTAINER_RUNTIME_BIN,
@@ -15,10 +15,10 @@ index 7201bfc..6ee7406 100644
 +  stopContainer,
 +  volumeMountArgs,
 +} from './container-runtime.js';
+ import { EGRESS_NETWORK, egressNetworkArgs, ensureEgressNetwork } from './egress-lockdown.js';
  import { composeGroupClaudeMd } from './claude-md-compose.js';
  import { getAgentGroup } from './db/agent-groups.js';
- import { getDb, hasTable } from './db/connection.js';
-@@ -448,7 +455,7 @@ async function buildContainerArgs(
+@@ -467,7 +474,7 @@ async function buildContainerArgs(
      if (mount.readonly) {
        args.push(...readonlyMountArgs(mount.hostPath, mount.containerPath));
      } else {
@@ -27,7 +27,7 @@ index 7201bfc..6ee7406 100644
      }
    }
  
-@@ -477,17 +484,20 @@ export async function buildAgentGroupImage(agentGroupId: string): Promise<void>
+@@ -514,17 +521,20 @@ export async function buildAgentGroupImage(agentGroupId: string): Promise<void>
      throw new Error('No packages to install. Use install_packages first.');
    }
  
@@ -51,12 +51,11 @@ index 7201bfc..6ee7406 100644
    }
    dockerfile += 'USER node\n';
  
-@@ -499,7 +509,10 @@ export async function buildAgentGroupImage(agentGroupId: string): Promise<void>
+@@ -536,7 +546,9 @@ export async function buildAgentGroupImage(agentGroupId: string): Promise<void>
    const tmpDockerfile = path.join(DATA_DIR, `Dockerfile.${agentGroupId}`);
    fs.writeFileSync(tmpDockerfile, dockerfile);
    try {
 -    execSync(`${CONTAINER_RUNTIME_BIN} build -t ${imageTag} -f ${tmpDockerfile} .`, {
-+    const shellQuote = (value: string): string => `'${value.replace(/'/g, "'\\''")}'`;
 +    const dockerfileForHost = hostMountPath(tmpDockerfile);
 +    const buildContextForHost = hostMountPath(DATA_DIR);
 +    execSync(`${CONTAINER_RUNTIME_BIN} build -t ${shellQuote(imageTag)} -f ${shellQuote(dockerfileForHost)} ${shellQuote(buildContextForHost)}`, {
@@ -64,7 +63,7 @@ index 7201bfc..6ee7406 100644
        stdio: 'pipe',
        timeout: 900_000,
 diff --git a/src/container-runtime.ts b/src/container-runtime.ts
-index 82ddb5e..2867bff 100644
+index 82ddb5e..fb35139 100644
 --- a/src/container-runtime.ts
 +++ b/src/container-runtime.ts
 @@ -4,6 +4,7 @@
@@ -75,7 +74,7 @@ index 82ddb5e..2867bff 100644
  
  import { CONTAINER_INSTALL_LABEL } from './config.js';
  import { log } from './log.js';
-@@ -20,9 +21,35 @@ export function hostGatewayArgs(): string[] {
+@@ -20,9 +21,36 @@ export function hostGatewayArgs(): string[] {
    return [];
  }
  
@@ -100,6 +99,7 @@ index 82ddb5e..2867bff 100644
 +  return containerPath;
 +}
 +
++/** Returns CLI args for a bind mount, translating the host path for nested daemons. */
 +export function volumeMountArgs(hostPath: string, containerPath: string, readonly = false): string[] {
 +  const suffix = readonly ? ':ro' : '';
 +  return ['-v', `${hostMountPath(hostPath)}:${containerPath}${suffix}`];
