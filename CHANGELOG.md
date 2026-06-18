@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.1.17-aio.1 - 2026-06-18
+
+### Maintenance
+
+- Bump nanoclaw to upstream v2.1.17
+
+### Tests
+
+- Align pytest config
+
+- Use shared app test helpers
+
 ## v2.0.64-aio.6 - 2026-05-26
 
 ### Documentation
