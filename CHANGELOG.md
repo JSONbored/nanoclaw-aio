@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.1.17-aio.2 - 2026-06-18
+
+### Build
+
+- Run nanoclaw on shared aio-base
+
+### Maintenance
+
+- Sync upstream commit keys
+
 ## v2.1.17-aio.1 - 2026-06-18
 
 ### Maintenance
