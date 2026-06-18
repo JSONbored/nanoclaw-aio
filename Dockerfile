@@ -10,6 +10,8 @@ ARG AIO_REVISION=1
 ARG PNPM_VERSION=10.33.0
 ARG TELEGRAM_ADAPTER_VERSION=4.26.0
 
+FROM jsonbored/aio-base:s6-3.2.1.0@sha256:07db479a01a95ba28480b4605f5d1cc8bedb574b77cf167ee46e29b9558fee90 AS aio-base
+
 FROM node:24-slim@sha256:24dc26ef1e3c3690f27ebc4136c9c186c3133b25563ae4d7f0692e4d1fe5db0e AS build
 
 ARG UPSTREAM_COMMIT
@@ -77,17 +79,24 @@ LABEL org.opencontainers.image.source="https://github.com/JSONbored/nanoclaw-aio
       io.jsonbored.upstream.channels_commit="${CHANNELS_COMMIT}" \
       io.jsonbored.nanoclaw.telegram_adapter_version="${TELEGRAM_ADAPTER_VERSION}"
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+COPY --from=aio-base /aio-overlay/ /
+COPY --from=build /etc/ssl/certs /etc/ssl/certs
+COPY --from=build /etc/ca-certificates.conf /etc/ca-certificates.conf
+COPY --from=build /usr/share/ca-certificates /usr/share/ca-certificates
+
 # hadolint ignore=DL3008
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    aio-harden pre && \
     apt-get update && apt-get install -y --no-install-recommends \
       bash \
       ca-certificates \
       curl \
       docker.io \
       gosu \
-      tini \
-    && rm -rf /var/lib/apt/lists/*
+    && aio-harden post
 
 ENV NANOCLAW_AIO_VERSION="${UPSTREAM_VERSION}-aio.${AIO_REVISION}" \
     NANOCLAW_UPSTREAM_VERSION="${UPSTREAM_VERSION}" \
@@ -104,8 +113,10 @@ WORKDIR /opt/nanoclaw
 COPY --from=build /opt/nanoclaw /opt/nanoclaw
 COPY --from=build /opt/nanoclaw/groups /opt/nanoclaw-default-groups
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY rootfs/ /
 
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh && \
+    find /etc/services.d -type f -name "run" -exec chmod +x {} \; && \
     mkdir -p /appdata && \
     chown -R node:node /appdata /opt/nanoclaw
 
@@ -114,4 +125,7 @@ VOLUME ["/appdata"]
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
   CMD /bin/bash -lc 'if [[ -f /appdata/.waiting-for-config || -f /appdata/.smoke-ready ]]; then exit 0; fi; test -f /appdata/.bootstrap-complete && pgrep -f "dist/index.js" >/dev/null'
 
-ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/docker-entrypoint.sh"]
+ENV S6_CMD_WAIT_FOR_SERVICES_MAXTIME=300000
+ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2
+
+ENTRYPOINT ["/init"]
