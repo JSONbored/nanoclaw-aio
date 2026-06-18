@@ -220,6 +220,18 @@ def test_aio_defaults_point_to_paired_agent_image() -> None:
     assert "patches/unraid-host-paths.patch" in dockerfile  # nosec B101
 
 
+def test_aio_runtime_uses_shared_aio_base_overlay() -> None:
+    dockerfile = _read("Dockerfile")
+    service = _read("rootfs/etc/services.d/nanoclaw/run")
+
+    assert "FROM jsonbored/aio-base:s6-3.2.1.0@" in dockerfile  # nosec B101
+    assert "COPY --from=aio-base /aio-overlay/ /" in dockerfile  # nosec B101
+    assert "aio-harden pre" in dockerfile  # nosec B101
+    assert "aio-harden post" in dockerfile  # nosec B101
+    assert 'ENTRYPOINT ["/init"]' in dockerfile  # nosec B101
+    assert "exec /usr/local/bin/docker-entrypoint.sh" in service  # nosec B101
+
+
 def test_unraid_overlay_quotes_dynamic_docker_build_inputs() -> None:
     patch = _read("patches/unraid-host-paths.patch")
 
