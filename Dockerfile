@@ -3,10 +3,10 @@
 # checkov:skip=CKV_DOCKER_3: The wrapper starts as root to align Docker socket group permissions, then runs NanoClaw as node.
 # checkov:skip=CKV_DOCKER_7: NanoClaw is pinned by tag and commit SHA because upstream does not publish a Docker image for this AIO runtime.
 
-ARG UPSTREAM_VERSION=v2.0.64
-ARG UPSTREAM_COMMIT=0683c6ec589ec0df74c2a3d99f9544127317b490
+ARG UPSTREAM_VERSION=v2.1.17
+ARG UPSTREAM_COMMIT=ee7f891698760f21b9e79a850d64c7f633cd95ef
 ARG CHANNELS_COMMIT=36fb78092c27737a2313c07244748a98b26c7d03
-ARG AIO_REVISION=4
+ARG AIO_REVISION=1
 ARG PNPM_VERSION=10.33.0
 ARG TELEGRAM_ADAPTER_VERSION=4.26.0
 
@@ -92,7 +92,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 ENV NANOCLAW_AIO_VERSION="${UPSTREAM_VERSION}-aio.${AIO_REVISION}" \
     NANOCLAW_UPSTREAM_VERSION="${UPSTREAM_VERSION}" \
     NANOCLAW_CHANNELS_COMMIT="${CHANNELS_COMMIT}" \
-    CONTAINER_IMAGE="jsonbored/nanoclaw-agent:${UPSTREAM_VERSION}-agent.2" \
+    CONTAINER_IMAGE="jsonbored/nanoclaw-agent:${UPSTREAM_VERSION}-agent.1" \
     CONTAINER_IMAGE_BASE="jsonbored/nanoclaw-agent" \
     NANOCLAW_CONTAINER_APPDATA_DIR="/appdata" \
     NANOCLAW_HOST_APPDATA_DIR="/mnt/user/appdata/nanoclaw-aio" \

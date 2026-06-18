@@ -183,20 +183,20 @@ def test_xml_overview_uses_fleet_ca_description_format() -> None:
 
 
 def test_dockerfiles_pin_upstream_and_component_versions() -> None:
-    assert _arg_value("Dockerfile", "UPSTREAM_VERSION") == "v2.0.64"  # nosec B101
+    assert _arg_value("Dockerfile", "UPSTREAM_VERSION") == "v2.1.17"  # nosec B101
     assert _arg_value("Dockerfile", "UPSTREAM_COMMIT") == (  # nosec B101
-        "0683c6ec589ec0df74c2a3d99f9544127317b490"
+        "ee7f891698760f21b9e79a850d64c7f633cd95ef"
     )
     assert _arg_value("Dockerfile", "CHANNELS_COMMIT") == (  # nosec B101
         "36fb78092c27737a2313c07244748a98b26c7d03"
     )
-    assert _arg_value("Dockerfile", "AIO_REVISION") == "4"  # nosec B101
+    assert _arg_value("Dockerfile", "AIO_REVISION") == "1"  # nosec B101
     assert (  # nosec B101
         _arg_value("components/nanoclaw-agent/Dockerfile", "UPSTREAM_VERSION")
-        == "v2.0.64"
+        == "v2.1.17"
     )
     assert (  # nosec B101
-        _arg_value("components/nanoclaw-agent/Dockerfile", "AGENT_REVISION") == "2"
+        _arg_value("components/nanoclaw-agent/Dockerfile", "AGENT_REVISION") == "1"
     )
     assert "CLAUDE_CODE_VERSION=2.1.128" in _read(
         "components/nanoclaw-agent/Dockerfile"
@@ -213,7 +213,7 @@ def test_aio_defaults_point_to_paired_agent_image() -> None:
     dockerfile = _read("Dockerfile")
 
     assert (
-        'CONTAINER_IMAGE="jsonbored/nanoclaw-agent:${UPSTREAM_VERSION}-agent.2"'
+        'CONTAINER_IMAGE="jsonbored/nanoclaw-agent:${UPSTREAM_VERSION}-agent.1"'
         in dockerfile
     )  # nosec B101
     assert 'CONTAINER_IMAGE_BASE="jsonbored/nanoclaw-agent"' in dockerfile  # nosec B101

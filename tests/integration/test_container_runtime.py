@@ -9,7 +9,7 @@ from tests.helpers import DockerRuntime, docker_available, ensure_image, temp_di
 pytestmark = pytest.mark.integration
 
 AIO_IMAGE = "nanoclaw-aio:pytest"
-AGENT_IMAGE = "jsonbored/nanoclaw-agent:v2.0.64-agent.2"
+AGENT_IMAGE = "jsonbored/nanoclaw-agent:v2.1.17-agent.1"
 
 
 @pytest.fixture(scope="session")
