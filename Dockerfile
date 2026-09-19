@@ -3,8 +3,8 @@
 # checkov:skip=CKV_DOCKER_3: The wrapper starts as root to align Docker socket group permissions, then runs NanoClaw as node.
 # checkov:skip=CKV_DOCKER_7: NanoClaw is pinned by tag and commit SHA because upstream does not publish a Docker image for this AIO runtime.
 
-ARG UPSTREAM_VERSION=v2.1.17
-ARG UPSTREAM_COMMIT=ee7f891698760f21b9e79a850d64c7f633cd95ef
+ARG UPSTREAM_VERSION=v2.3.0
+ARG UPSTREAM_COMMIT=54d9d9a50c0e572fa3969d63ab87a4dd3d75cc6f
 ARG CHANNELS_COMMIT=36fb78092c27737a2313c07244748a98b26c7d03
 ARG AIO_REVISION=1
 ARG PNPM_VERSION=10.33.0
