@@ -170,6 +170,8 @@ start_telegram_pairing_watcher() {
 }
 
 main() {
+	: "${CONTAINER_IMAGE:=jsonbored/nanoclaw-agent:${NANOCLAW_UPSTREAM_VERSION:?}-agent.1}"
+	export CONTAINER_IMAGE
 	log "Preparing NanoClaw ${NANOCLAW_AIO_VERSION:-AIO} runtime..."
 	seed_runtime_layout
 	write_runtime_env

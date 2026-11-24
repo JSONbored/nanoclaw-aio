@@ -14,6 +14,8 @@ FROM jsonbored/aio-base:s6-3.2.1.0@sha256:07db479a01a95ba28480b4605f5d1cc8bedb57
 
 FROM node:24-slim@sha256:24dc26ef1e3c3690f27ebc4136c9c186c3133b25563ae4d7f0692e4d1fe5db0e AS build
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 ARG UPSTREAM_COMMIT
 ARG CHANNELS_COMMIT
 ARG PNPM_VERSION
