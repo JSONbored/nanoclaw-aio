@@ -3,16 +3,18 @@
 # checkov:skip=CKV_DOCKER_3: The wrapper starts as root to align Docker socket group permissions, then runs NanoClaw as node.
 # checkov:skip=CKV_DOCKER_7: NanoClaw is pinned by tag and commit SHA because upstream does not publish a Docker image for this AIO runtime.
 
-ARG UPSTREAM_VERSION=v2.1.17
-ARG UPSTREAM_COMMIT=ee7f891698760f21b9e79a850d64c7f633cd95ef
-ARG CHANNELS_COMMIT=36fb78092c27737a2313c07244748a98b26c7d03
+ARG UPSTREAM_VERSION=v2026.11.0
+ARG UPSTREAM_COMMIT=3307c3e033ef3489705dfa5075553b5452baa7d9
+ARG CHANNELS_COMMIT=54821c47d33595ed62fe840e4c37690ff007515d
 ARG AIO_REVISION=1
-ARG PNPM_VERSION=10.33.0
-ARG TELEGRAM_ADAPTER_VERSION=4.26.0
+ARG PNPM_VERSION=10.34.9
+ARG TELEGRAM_ADAPTER_VERSION=4.41.1
 
 FROM jsonbored/aio-base:s6-3.2.1.0@sha256:07db479a01a95ba28480b4605f5d1cc8bedb574b77cf167ee46e29b9558fee90 AS aio-base
 
 FROM node:24-slim@sha256:24dc26ef1e3c3690f27ebc4136c9c186c3133b25563ae4d7f0692e4d1fe5db0e AS build
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG UPSTREAM_COMMIT
 ARG CHANNELS_COMMIT
@@ -40,14 +42,18 @@ RUN git clone https://github.com/nanocoai/nanoclaw.git . && \
       src/channels/telegram.ts \
       src/channels/telegram-pairing.ts \
       src/channels/telegram-pairing.test.ts \
-      src/channels/telegram-markdown-sanitize.ts \
-      src/channels/telegram-markdown-sanitize.test.ts; do \
+      src/channels/telegram-registration.test.ts \
+      src/channels/telegram-connect-group.test.ts \
+      src/channels/telegram-instances-registration.test.ts \
+      src/channels/telegram-pairing-interceptor.test.ts; do \
       mkdir -p "$(dirname "${file}")"; \
       cp "/tmp/nanoclaw-channels/${file}" "${file}"; \
     done && \
     if ! grep -q "^import './telegram.js';" src/channels/index.ts; then \
       printf "\nimport './telegram.js';\n" >> src/channels/index.ts; \
     fi && \
+    mkdir -p /opt/nanoclaw-default-groups && \
+    git archive ee7f891698760f21b9e79a850d64c7f633cd95ef groups | tar -x -C /opt/nanoclaw-default-groups --strip-components=1 && \
     rm -rf /tmp/nanoclaw-channels
 
 COPY patches/unraid-host-paths.patch /tmp/unraid-host-paths.patch
@@ -111,7 +117,7 @@ ENV NANOCLAW_AIO_VERSION="${UPSTREAM_VERSION}-aio.${AIO_REVISION}" \
 WORKDIR /opt/nanoclaw
 
 COPY --from=build /opt/nanoclaw /opt/nanoclaw
-COPY --from=build /opt/nanoclaw/groups /opt/nanoclaw-default-groups
+COPY --from=build /opt/nanoclaw-default-groups /opt/nanoclaw-default-groups
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 COPY rootfs/ /
 

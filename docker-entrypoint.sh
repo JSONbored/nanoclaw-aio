@@ -79,6 +79,9 @@ seed_runtime_layout() {
 	ln -sfn "${INSTALL_ROOT}/bin" "${RUNTIME_ROOT}/bin"
 	ln -sfn "${INSTALL_ROOT}/dist" "${RUNTIME_ROOT}/dist"
 	ln -sfn "${INSTALL_ROOT}/node_modules" "${RUNTIME_ROOT}/node_modules"
+	ln -sfn "${INSTALL_ROOT}/agent-images.json" "${RUNTIME_ROOT}/agent-images.json"
+	ln -sfn "${INSTALL_ROOT}/versions.json" "${RUNTIME_ROOT}/versions.json"
+	mkdir -p "${RUNTIME_ROOT}/templates"
 	ln -sfn "${INSTALL_ROOT}/package.json" "${RUNTIME_ROOT}/package.json"
 	ln -sfn "${INSTALL_ROOT}/pnpm-lock.yaml" "${RUNTIME_ROOT}/pnpm-lock.yaml"
 	ln -sfn "${INSTALL_ROOT}/setup" "${RUNTIME_ROOT}/setup"
@@ -167,6 +170,8 @@ start_telegram_pairing_watcher() {
 }
 
 main() {
+	: "${CONTAINER_IMAGE:=jsonbored/nanoclaw-agent:${NANOCLAW_UPSTREAM_VERSION:?}-agent.1}"
+	export CONTAINER_IMAGE
 	log "Preparing NanoClaw ${NANOCLAW_AIO_VERSION:-AIO} runtime..."
 	seed_runtime_layout
 	write_runtime_env
@@ -194,7 +199,7 @@ main() {
 
 	start_telegram_pairing_watcher
 
-	log "Starting NanoClaw v2 runtime. Nested agents will use ${CONTAINER_IMAGE:-jsonbored/nanoclaw-agent:v2.0.64-agent.2}."
+	log "Starting NanoClaw v2 runtime. Nested agents will use ${CONTAINER_IMAGE}."
 	exec run_as_node bash -lc "cd '${RUNTIME_ROOT}' && exec node '${INSTALL_ROOT}/dist/index.js'"
 }
 

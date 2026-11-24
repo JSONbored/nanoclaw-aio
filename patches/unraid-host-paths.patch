@@ -1,89 +1,26 @@
-diff --git a/src/container-runner.ts b/src/container-runner.ts
-index 8482a9e..f8d010a 100644
---- a/src/container-runner.ts
-+++ b/src/container-runner.ts
-@@ -22,7 +22,14 @@ import {
- import { materializeContainerJson } from './container-config.js';
- import { getContainerConfig } from './db/container-configs.js';
- import { updateContainerConfigScalars } from './db/container-configs.js';
--import { CONTAINER_RUNTIME_BIN, hostGatewayArgs, readonlyMountArgs, stopContainer } from './container-runtime.js';
-+import {
-+  CONTAINER_RUNTIME_BIN,
-+  hostGatewayArgs,
-+  hostMountPath,
-+  readonlyMountArgs,
-+  stopContainer,
-+  volumeMountArgs,
-+} from './container-runtime.js';
- import { EGRESS_NETWORK, egressNetworkArgs, ensureEgressNetwork } from './egress-lockdown.js';
- import { composeGroupClaudeMd } from './claude-md-compose.js';
- import { getAgentGroup } from './db/agent-groups.js';
-@@ -467,7 +474,7 @@ async function buildContainerArgs(
-     if (mount.readonly) {
-       args.push(...readonlyMountArgs(mount.hostPath, mount.containerPath));
-     } else {
--      args.push('-v', `${mount.hostPath}:${mount.containerPath}`);
-+      args.push(...volumeMountArgs(mount.hostPath, mount.containerPath));
-     }
-   }
- 
-@@ -514,17 +521,20 @@ export async function buildAgentGroupImage(agentGroupId: string): Promise<void>
-     throw new Error('No packages to install. Use install_packages first.');
-   }
- 
-+  const shellQuote = (value: string): string => `'${value.replace(/'/g, "'\\''")}'`;
-   let dockerfile = `FROM ${CONTAINER_IMAGE}\nUSER root\n`;
-   if (aptPackages.length > 0) {
--    dockerfile += `RUN apt-get update && apt-get install -y ${aptPackages.join(' ')} && rm -rf /var/lib/apt/lists/*\n`;
-+    dockerfile += `RUN apt-get update && apt-get install -y ${aptPackages.map(shellQuote).join(' ')} && rm -rf /var/lib/apt/lists/*\n`;
-   }
-   if (npmPackages.length > 0) {
-     // pnpm skips build scripts unless packages are allowlisted. Append each
-     // to /root/.npmrc (base image sets it up for agent-browser) so packages
-     // with postinstall — e.g. playwright, puppeteer, native addons — don't
-     // install silently broken.
--    const allowlist = npmPackages.map((p) => `echo 'only-built-dependencies[]=${p}' >> /root/.npmrc`).join(' && ');
--    dockerfile += `RUN ${allowlist} && pnpm install -g ${npmPackages.join(' ')}\n`;
-+    const allowlist = npmPackages
-+      .map((p) => `echo ${shellQuote(`only-built-dependencies[]=${p}`)} >> /root/.npmrc`)
-+      .join(' && ');
-+    dockerfile += `RUN ${allowlist} && pnpm install -g ${npmPackages.map(shellQuote).join(' ')}\n`;
-   }
-   dockerfile += 'USER node\n';
- 
-@@ -536,7 +546,9 @@ export async function buildAgentGroupImage(agentGroupId: string): Promise<void>
-   const tmpDockerfile = path.join(DATA_DIR, `Dockerfile.${agentGroupId}`);
-   fs.writeFileSync(tmpDockerfile, dockerfile);
-   try {
--    execSync(`${CONTAINER_RUNTIME_BIN} build -t ${imageTag} -f ${tmpDockerfile} .`, {
-+    const dockerfileForHost = hostMountPath(tmpDockerfile);
-+    const buildContextForHost = hostMountPath(DATA_DIR);
-+    execSync(`${CONTAINER_RUNTIME_BIN} build -t ${shellQuote(imageTag)} -f ${shellQuote(dockerfileForHost)} ${shellQuote(buildContextForHost)}`, {
-       cwd: DATA_DIR,
-       stdio: 'pipe',
-       timeout: 900_000,
-diff --git a/src/container-runtime.ts b/src/container-runtime.ts
-index 82ddb5e..fb35139 100644
---- a/src/container-runtime.ts
-+++ b/src/container-runtime.ts
-@@ -4,6 +4,7 @@
+diff --git a/src/drivers/docker-driver.ts b/src/drivers/docker-driver.ts
+--- a/src/drivers/docker-driver.ts
++++ b/src/drivers/docker-driver.ts
+@@ -18,7 +18,8 @@
   */
- import { execSync } from 'child_process';
- import os from 'os';
+ import { createHash } from 'crypto';
+ import fs from 'fs';
+-import os from 'os';
++import os from 'os';
 +import path from 'path';
  
- import { CONTAINER_INSTALL_LABEL } from './config.js';
- import { log } from './log.js';
-@@ -20,9 +21,36 @@ export function hostGatewayArgs(): string[] {
-   return [];
+ import { log } from '../log.js';
+ 
+@@ -954,12 +955,27 @@
+   return spec.runAs ? ['--user', `${spec.runAs.uid}:${spec.runAs.gid}`] : [];
  }
  
-+/**
-+ * Translate paths inside the AIO container to paths the host Docker daemon can
-+ * see. Unraid mounts `/mnt/user/appdata/nanoclaw-aio` into the AIO container as
-+ * `/appdata`, but nested agent containers are created by the host daemon through
-+ * `/var/run/docker.sock`; those bind mounts must therefore use host paths.
-+ */
+-export function mountArgs(mounts: readonly MountSpec[]): string[] {
+-  return mounts.flatMap((m) => [
+-    '-v',
+-    m.mode === 'ro' ? `${m.hostPath}:${m.containerPath}:ro` : `${m.hostPath}:${m.containerPath}`,
+-  ]);
+-}
 +export function hostMountPath(containerPath: string): string {
 +  const hostAppdata = process.env.NANOCLAW_HOST_APPDATA_DIR?.trim();
 +  if (!hostAppdata) return containerPath;
@@ -99,16 +36,47 @@ index 82ddb5e..fb35139 100644
 +  return containerPath;
 +}
 +
-+/** Returns CLI args for a bind mount, translating the host path for nested daemons. */
-+export function volumeMountArgs(hostPath: string, containerPath: string, readonly = false): string[] {
-+  const suffix = readonly ? ':ro' : '';
-+  return ['-v', `${hostMountPath(hostPath)}:${containerPath}${suffix}`];
++export function mountArgs(mounts: readonly MountSpec[]): string[] {
++  return mounts.flatMap((m) => {
++    const source = hostMountPath(m.hostPath);
++    return ['-v', `${source}:${m.containerPath}${m.mode === 'ro' ? ':ro' : ''}`];
++  });
 +}
-+
- /** Returns CLI args for a readonly bind mount. */
- export function readonlyMountArgs(hostPath: string, containerPath: string): string[] {
--  return ['-v', `${hostPath}:${containerPath}:ro`];
-+  return volumeMountArgs(hostPath, containerPath, true);
- }
  
- /** Stop a container by name. Uses execFileSync to avoid shell injection. */
+ export function envArgs(env: Record<string, string>): string[] {
+   return Object.entries(env).flatMap(([k, v]) => ['-e', `${k}=${v}`]);
+diff --git a/src/container-runner.ts b/src/container-runner.ts
+--- a/src/container-runner.ts
++++ b/src/container-runner.ts
+@@ -1748,18 +1748,19 @@
+   // Empty is non-fatal: the build below fails on its own if the base is really absent.
+   const baseId = (await inspectImage(CONTAINER_IMAGE, '{{.Id}}')) ?? '';
+ 
+-  let dockerfile = `FROM ${CONTAINER_IMAGE}\nUSER root\n`;
+-  if (aptPackages.length > 0) {
+-    dockerfile += `RUN apt-get update && apt-get install -y ${aptPackages.join(' ')} && rm -rf /var/lib/apt/lists/*\n`;
+-  }
+-  if (npmPackages.length > 0) {
+-    // pnpm skips build scripts unless packages are allowlisted. Append each
+-    // to /root/.npmrc (base image sets it up for agent-browser) so packages
+-    // with postinstall — e.g. playwright, puppeteer, native addons — don't
+-    // install silently broken.
+-    const allowlist = npmPackages.map((p) => `echo 'only-built-dependencies[]=${p}' >> /root/.npmrc`).join(' && ');
+-    dockerfile += `RUN ${allowlist} && pnpm install -g ${npmPackages.join(' ')}\n`;
+-  }
++  const shellQuote = (value: string): string => `'${value.replace(/'/g, "'\\''")}'`;
++  let dockerfile = `FROM ${CONTAINER_IMAGE}\nUSER root\n`;
++  if (aptPackages.length > 0) {
++    dockerfile += `RUN apt-get update && apt-get install -y ${aptPackages.map(shellQuote).join(' ')} && rm -rf /var/lib/apt/lists/*\n`;
++  }
++  if (npmPackages.length > 0) {
++    // pnpm skips build scripts unless packages are allowlisted. Append each
++    // to /root/.npmrc (base image sets it up for agent-browser) so packages
++    // with postinstall — e.g. playwright, puppeteer, native addons — don't
++    // install silently broken.
++    const allowlist = npmPackages.map((p) => `echo ${shellQuote(`only-built-dependencies[]=${p}`)} >> /root/.npmrc`).join(' && ');
++    dockerfile += `RUN ${allowlist} && pnpm install -g ${npmPackages.map(shellQuote).join(' ')}\n`;
++  }
+   dockerfile += 'USER node\n';
+ 
+   // Overwrite the provenance label rather than letting it be inherited.
