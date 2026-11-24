@@ -15,14 +15,20 @@ sandbox/helper image used by `nanoclaw-aio`.
 ## Current Release
 
 - Upstream NanoClaw:
-  [`nanocoai/nanoclaw` `v2.0.64`](https://github.com/nanocoai/nanoclaw/releases/tag/v2.0.64)
-- Upstream commit: `0683c6ec589ec0df74c2a3d99f9544127317b490`
-- Channels branch commit: `36fb78092c27737a2313c07244748a98b26c7d03`
-- AIO image tag: `v2.0.64-aio.4`
-- Agent helper image tag: `v2.0.64-agent.2`
+  [`nanocoai/nanoclaw` `v2026.11.0`](https://github.com/nanocoai/nanoclaw/releases/tag/v2026.11.0)
+- Upstream commit: `3307c3e033ef3489705dfa5075553b5452baa7d9`
+- Channels branch commit: `54821c47d33595ed62fe840e4c37690ff007515d`
+- AIO image tag: `v2026.11.0-aio.1`
+- Agent helper image tag: `v2026.11.0-agent.1`
 
 NanoClaw `main` may move ahead of the latest release. This package tracks stable
 upstream releases, not unreleased `main`.
+
+### Upgrading an existing installation
+
+Back up the appdata directory before updating. Existing Unraid templates can retain an old explicit `CONTAINER_IMAGE` value. Set that field to `jsonbored/nanoclaw-agent:v2026.11.0-agent.1` when updating the parent, or select a custom helper built for the same upstream release. Existing group instructions remain under appdata.
+
+If you use OneCLI, follow the upstream gateway database backup, password and per-agent grant migration before restarting. Telegram uses adapter 4.41.1 in this release. Verify the previously paired chat and a nested agent response after updating. [Upstream upgrade notes](https://github.com/nanocoai/nanoclaw/releases/tag/v2026.11.0)
 
 ## What This Image Includes
 
@@ -70,7 +76,7 @@ required for first boot:
 The default helper image is:
 
 ```text
-CONTAINER_IMAGE=jsonbored/nanoclaw-agent:v2.0.64-agent.2
+CONTAINER_IMAGE=jsonbored/nanoclaw-agent:v2026.11.0-agent.1
 CONTAINER_IMAGE_BASE=jsonbored/nanoclaw-agent
 ```
 
@@ -106,15 +112,15 @@ version, while the helper image ships on the same release train.
 `jsonbored/nanoclaw-aio` and `ghcr.io/jsonbored/nanoclaw-aio` publish:
 
 - `latest`
-- `v2.0.64`
-- `v2.0.64-aio.4`
+- `v2026.11.0`
+- `v2026.11.0-aio.1`
 - `sha-<commit>`
 
 `jsonbored/nanoclaw-agent` and `ghcr.io/jsonbored/nanoclaw-agent` publish:
 
 - `latest`
-- `v2.0.64`
-- `v2.0.64-agent.2`
+- `v2026.11.0`
+- `v2026.11.0-agent.1`
 - `sha-<commit>`
 
 See [`docs/releases.md`](docs/releases.md) for the release model.

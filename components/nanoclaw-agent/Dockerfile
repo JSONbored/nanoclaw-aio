@@ -17,19 +17,23 @@ RUN git clone https://github.com/nanocoai/nanoclaw.git . && \
     git checkout "${UPSTREAM_COMMIT}" && \
     rm -rf .git
 
-FROM node:24-slim@sha256:24dc26ef1e3c3690f27ebc4136c9c186c3133b25563ae4d7f0692e4d1fe5db0e
+FROM node:22.23.5-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee
 
 ARG UPSTREAM_VERSION
 ARG UPSTREAM_COMMIT
 ARG AGENT_REVISION
 ARG INSTALL_CJK_FONTS=false
-ARG CLAUDE_CODE_VERSION=2.1.128
-ARG AGENT_BROWSER_VERSION=latest
+ARG CLAUDE_CODE_VERSION=2.1.321
+ARG AGENT_BROWSER_VERSION=0.27.1
 ARG VERCEL_VERSION=52.2.1
-ARG BUN_VERSION=1.3.12
-ARG PNPM_VERSION=10.33.0
+ARG BUN_VERSION=1.4.4
+ARG PNPM_VERSION=10.34.9
+ARG NPM_VERSION=11.21.2
+ARG AGENT_RUNNER_LOCK_SHA256=e7cee98063b3bc5740a88b2c492adf7affd6b837db5851c58404a98e0071cdf0
 
-LABEL org.opencontainers.image.source="https://github.com/JSONbored/nanoclaw-aio" \
+LABEL dev.nanoclaw.image-source="local" \
+      dev.nanoclaw.agent-runner-lock-sha256="${AGENT_RUNNER_LOCK_SHA256}" \
+      org.opencontainers.image.source="https://github.com/JSONbored/nanoclaw-aio" \
       org.opencontainers.image.title="nanoclaw-agent" \
       org.opencontainers.image.description="Helper sandbox image spawned by nanoclaw-aio for isolated NanoClaw agent sessions." \
       org.opencontainers.image.version="${UPSTREAM_VERSION}-agent.${AGENT_REVISION}" \
@@ -48,6 +52,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       fonts-noto-color-emoji \
       libgbm1 \
       libnss3 \
+      libnss3-tools \
+      poppler-utils \
       libatk-bridge2.0-0 \
       libgtk-3-0 \
       libx11-xcb1 \
@@ -85,9 +91,11 @@ WORKDIR /app
 COPY --from=source /src/container/agent-runner/package.json /src/container/agent-runner/bun.lock ./
 
 RUN --mount=type=cache,target=/root/.bun/install/cache \
+    echo "${AGENT_RUNNER_LOCK_SHA256}  bun.lock" | sha256sum -c - && \
     bun install --frozen-lockfile
 
 RUN --mount=type=cache,target=/root/.cache/pnpm \
+    npm install -g "npm@${NPM_VERSION}" && \
     corepack enable && \
     corepack prepare "pnpm@${PNPM_VERSION}" --activate && \
     echo "only-built-dependencies[]=agent-browser" > /root/.npmrc && \
@@ -108,6 +116,8 @@ RUN chmod +x /app/entrypoint.sh && \
     mkdir -p /workspace/group /workspace/extra && \
     chown -R node:node /workspace && \
     chmod 777 /home/node
+
+RUN find / -xdev -perm -4000 -type f -exec chmod u-s {} +
 
 USER node
 WORKDIR /workspace/group

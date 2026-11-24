@@ -126,7 +126,7 @@ def test_xml_exposes_required_and_advanced_v2_settings() -> None:
 
     assert required_targets <= set(configs)  # nosec B101
     assert configs["CONTAINER_IMAGE"].attrib["Default"] == (  # nosec B101
-        "jsonbored/nanoclaw-agent:v2.0.64-agent.2"
+        "jsonbored/nanoclaw-agent:v2026.11.0-agent.1"
     )
     assert configs["CONTAINER_IMAGE_BASE"].attrib["Default"] == (  # nosec B101
         "jsonbored/nanoclaw-agent"
@@ -183,28 +183,28 @@ def test_xml_overview_uses_fleet_ca_description_format() -> None:
 
 
 def test_dockerfiles_pin_upstream_and_component_versions() -> None:
-    assert _arg_value("Dockerfile", "UPSTREAM_VERSION") == "v2.1.17"  # nosec B101
+    assert _arg_value("Dockerfile", "UPSTREAM_VERSION") == "v2026.11.0"  # nosec B101
     assert _arg_value("Dockerfile", "UPSTREAM_COMMIT") == (  # nosec B101
-        "ee7f891698760f21b9e79a850d64c7f633cd95ef"
+        "3307c3e033ef3489705dfa5075553b5452baa7d9"
     )
     assert _arg_value("Dockerfile", "CHANNELS_COMMIT") == (  # nosec B101
-        "36fb78092c27737a2313c07244748a98b26c7d03"
+        "54821c47d33595ed62fe840e4c37690ff007515d"
     )
     assert _arg_value("Dockerfile", "AIO_REVISION") == "1"  # nosec B101
     assert (  # nosec B101
         _arg_value("components/nanoclaw-agent/Dockerfile", "UPSTREAM_VERSION")
-        == "v2.1.17"
+        == "v2026.11.0"
     )
     assert (  # nosec B101
         _arg_value("components/nanoclaw-agent/Dockerfile", "AGENT_REVISION") == "1"
     )
-    assert "CLAUDE_CODE_VERSION=2.1.128" in _read(
+    assert "CLAUDE_CODE_VERSION=2.1.321" in _read(
         "components/nanoclaw-agent/Dockerfile"
     )  # nosec B101
-    assert "BUN_VERSION=1.3.12" in _read(
+    assert "BUN_VERSION=1.4.4" in _read(
         "components/nanoclaw-agent/Dockerfile"
     )  # nosec B101
-    assert "PNPM_VERSION=10.33.0" in _read(
+    assert "PNPM_VERSION=10.34.9" in _read(
         "components/nanoclaw-agent/Dockerfile"
     )  # nosec B101
 
@@ -238,7 +238,8 @@ def test_unraid_overlay_quotes_dynamic_docker_build_inputs() -> None:
     assert "aptPackages.map(shellQuote)" in patch  # nosec B101
     assert "npmPackages.map(shellQuote)" in patch  # nosec B101
     assert "shellQuote(`only-built-dependencies[]=${p}`)" in patch  # nosec B101
-    assert "build -t ${shellQuote(imageTag)}" in patch  # nosec B101
+    assert "src/drivers/docker-driver.ts" in patch  # nosec B101
+    assert "hostMountPath(m.hostPath)" in patch  # nosec B101
 
 
 def test_docs_and_templates_do_not_expose_local_paths_or_stale_upstream() -> None:
