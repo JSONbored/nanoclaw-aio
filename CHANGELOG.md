@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2026.11.0-aio.1 - 2026-11-24
+
+### Fixes
+
+- Pair NanoClaw 2026.11.0 with its Telegram agent (#64)
+
 ## v2.1.17-aio.2 - 2026-06-18
 
 ### Build
